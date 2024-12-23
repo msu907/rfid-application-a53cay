@@ -1,0 +1,147 @@
+# Helm Chart Version: 3.11+
+# Purpose: Kubernetes Deployment template for RFID Asset Tracking System microservices
+# Provides: Container specifications, scaling parameters, resource management, and monitoring
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.service.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.service.name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: {{ .Values.service.component }}
+    app.kubernetes.io/part-of: rfid-asset-tracking
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # Prometheus monitoring configuration
+    prometheus.io/scrape: "{{ .Values.service.monitoring.enabled }}"
+    prometheus.io/path: {{ .Values.service.monitoring.path }}
+    prometheus.io/port: "{{ .Values.service.monitoring.port }}"
+    # Deployment metadata
+    kubernetes.io/change-cause: "Release {{ .Release.Name }} of {{ .Chart.Name }}"
+
+spec:
+  # Configurable replica count for high availability
+  replicas: {{ .Values.service.replicaCount }}
+  
+  # Rolling update strategy for zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.service.deployment.maxSurge }}
+      maxUnavailable: {{ .Values.service.deployment.maxUnavailable }}
+  
+  # Pod selector using recommended labels
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.service.name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.service.name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+      annotations:
+        # Pod-specific annotations for monitoring
+        prometheus.io/scrape: "{{ .Values.service.monitoring.enabled }}"
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    
+    spec:
+      # Pod security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ .Values.service.security.userId }}
+        fsGroup: {{ .Values.service.security.groupId }}
+      
+      # Service account for RBAC
+      serviceAccountName: {{ .Values.service.serviceAccount.name }}
+      
+      containers:
+        - name: {{ .Values.service.name }}
+          image: "{{ .Values.global.imageRegistry }}/{{ .Values.service.image.repository }}:{{ .Values.service.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          
+          # Container security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          
+          # Service ports configuration
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.ports.http }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.service.ports.grpc }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.service.monitoring.port }}
+              protocol: TCP
+          
+          # Resource limits and requests
+          resources:
+            limits:
+              cpu: {{ .Values.service.resources.limits.cpu }}
+              memory: {{ .Values.service.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.service.resources.requests.cpu }}
+              memory: {{ .Values.service.resources.requests.memory }}
+          
+          # Environment variables from ConfigMaps and Secrets
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-config
+            - secretRef:
+                name: {{ .Release.Name }}-secrets
+          
+          # Liveness probe for container health checking
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.service.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.service.probes.liveness.initialDelay }}
+            periodSeconds: {{ .Values.service.probes.liveness.period }}
+            timeoutSeconds: {{ .Values.service.probes.liveness.timeout }}
+            failureThreshold: {{ .Values.service.probes.liveness.failureThreshold }}
+          
+          # Readiness probe for service availability
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.service.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.service.probes.readiness.initialDelay }}
+            periodSeconds: {{ .Values.service.probes.readiness.period }}
+            timeoutSeconds: {{ .Values.service.probes.readiness.timeout }}
+            successThreshold: {{ .Values.service.probes.readiness.successThreshold }}
+          
+          # Volume mounts for persistent data
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config-volume
+              mountPath: /app/config
+              readOnly: true
+      
+      # Volumes configuration
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: {{ .Release.Name }}-config
+      
+      # Pod termination grace period
+      terminationGracePeriodSeconds: {{ .Values.service.deployment.gracePeriod }}
+      
+      # Image pull secrets for private registry
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
