@@ -1,0 +1,168 @@
+---
+# Ansible tasks for RFID reader configuration and management
+# ansible.builtin version: 2.15+
+
+# Install required packages for RFID reader operation
+- name: Install RFID reader dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - llrp-tools
+    - monitoring-agent
+    - performance-tools
+    - network-tools
+  register: package_install
+  retries: 3
+  delay: 5
+  until: package_install is success
+  tags: ['installation']
+
+# Configure LLRP protocol settings
+- name: Deploy LLRP configuration
+  ansible.builtin.template:
+    src: reader.conf.j2
+    dest: /etc/rfid/llrp.conf
+    owner: rfid
+    group: rfid
+    mode: '0644'
+  vars:
+    llrp_version: '1.1'
+    read_rate: 1000
+    frequency_band: '865-868'  # EU frequency band
+    power_level: -20  # dBm
+  notify: restart_reader_service
+  tags: ['configuration']
+
+# Configure network settings for RFID readers
+- name: Configure network interface
+  ansible.builtin.template:
+    src: network.conf.j2
+    dest: /etc/network/interfaces.d/rfid
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart_networking
+  tags: ['network']
+
+# Setup performance monitoring
+- name: Configure performance monitoring agent
+  ansible.builtin.template:
+    src: monitoring.conf.j2
+    dest: /etc/monitoring-agent/config.yml
+    owner: root
+    group: root
+    mode: '0644'
+  vars:
+    latency_threshold: 500  # milliseconds
+    metrics_enabled: true
+    collection_interval: 10  # seconds
+  notify: restart_monitoring_agent
+  tags: ['monitoring']
+
+# Configure health checks
+- name: Deploy health check script
+  ansible.builtin.template:
+    src: health_check.sh.j2
+    dest: /usr/local/bin/check_reader_health.sh
+    owner: root
+    group: root
+    mode: '0755'
+  tags: ['monitoring']
+
+- name: Setup health check cron job
+  ansible.builtin.cron:
+    name: "reader_health_check"
+    minute: "*"
+    job: "/usr/local/bin/check_reader_health.sh --threshold=500ms --alert=true"
+    user: root
+  tags: ['monitoring']
+
+# Configure RFID reader service
+- name: Configure reader service
+  ansible.builtin.template:
+    src: reader.service.j2
+    dest: /etc/systemd/system/rfid-reader.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: 
+    - reload_systemd
+    - restart_reader_service
+  tags: ['service']
+
+# Enable and start services
+- name: Enable and start RFID reader service
+  ansible.builtin.service:
+    name: rfid-reader
+    state: started
+    enabled: yes
+  register: service_start
+  retries: 3
+  delay: 10
+  until: service_start is success
+  tags: ['service']
+
+- name: Enable and start monitoring agent
+  ansible.builtin.service:
+    name: monitoring-agent
+    state: started
+    enabled: yes
+    args: "--performance-metrics=true --latency-threshold=500"
+  register: monitoring_start
+  retries: 3
+  delay: 5
+  until: monitoring_start is success
+  tags: ['monitoring']
+
+# Setup error handling and logging
+- name: Configure error logging
+  ansible.builtin.template:
+    src: logging.conf.j2
+    dest: /etc/rfid/logging.conf
+    owner: rfid
+    group: rfid
+    mode: '0644'
+  notify: restart_reader_service
+  tags: ['logging']
+
+# Configure automatic recovery
+- name: Deploy service recovery script
+  ansible.builtin.template:
+    src: recovery.sh.j2
+    dest: /usr/local/bin/reader_recovery.sh
+    owner: root
+    group: root
+    mode: '0755'
+  tags: ['recovery']
+
+- name: Setup failure detection and recovery
+  ansible.builtin.cron:
+    name: "reader_recovery_check"
+    minute: "*/5"
+    job: "/usr/local/bin/reader_recovery.sh --max-attempts=3 --delay=10"
+    user: root
+  tags: ['recovery']
+
+# Handlers are defined in handlers/main.yml but referenced here for clarity
+# handlers:
+# - name: restart_reader_service
+#   ansible.builtin.service:
+#     name: rfid-reader
+#     state: restarted
+#   retries: 3
+#   delay: 10
+#
+# - name: reload_systemd
+#   ansible.builtin.systemd:
+#     daemon_reload: yes
+#
+# - name: restart_networking
+#   ansible.builtin.service:
+#     name: networking
+#     state: restarted
+#
+# - name: restart_monitoring_agent
+#   ansible.builtin.service:
+#     name: monitoring-agent
+#     state: restarted
