@@ -1,0 +1,153 @@
+# Prometheus Configuration for RFID Asset Tracking System
+# Version: 2.45.0
+# Purpose: Define monitoring and scraping settings for system components
+
+global:
+  # Global settings applied to all scrape configurations
+  scrape_interval: 15s     # Default scrape interval for all jobs
+  evaluation_interval: 15s # Interval for evaluating rules
+  scrape_timeout: 10s     # Global timeout for scrape requests
+
+# Load alert rules from external file
+rule_files:
+  - "rules/alerts.yml"
+
+# Scrape configurations for all system components
+scrape_configs:
+  # API Gateway Monitoring
+  - job_name: 'api-gateway'
+    metrics_path: '/metrics'
+    scheme: 'http'
+    scrape_interval: 10s
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ['rfid-system']
+        selectors:
+          - role: service
+            label: 'app=api-gateway'
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ready]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: instance
+
+  # Asset Service Monitoring (Spring Boot)
+  - job_name: 'asset-service'
+    metrics_path: '/actuator/prometheus'
+    scheme: 'http'
+    scrape_interval: 10s
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ['rfid-system']
+        selectors:
+          - role: service
+            label: 'app=asset-service'
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ready]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: instance
+
+  # Reader Service Monitoring (Python FastAPI)
+  - job_name: 'reader-service'
+    metrics_path: '/metrics'
+    scheme: 'http'
+    scrape_interval: 5s  # More frequent for critical RFID operations
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ['rfid-system']
+        selectors:
+          - role: service
+            label: 'app=reader-service'
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ready]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: instance
+
+  # Visualization Service Monitoring
+  - job_name: 'visualization-service'
+    metrics_path: '/metrics'
+    scheme: 'http'
+    scrape_interval: 15s
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ['rfid-system']
+        selectors:
+          - role: service
+            label: 'app=visualization-service'
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ready]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: instance
+
+  # Kubernetes Node Monitoring
+  - job_name: 'kubernetes-nodes'
+    scheme: 'https'
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  # Kubernetes Service Endpoints Monitoring
+  - job_name: 'kubernetes-service-endpoints'
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names: ['rfid-system']
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+        action: replace
+        target_label: __address__
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+
+  # Node Exporter for Host Metrics
+  - job_name: 'node-exporter'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ['monitoring']
+        selectors:
+          - role: service
+            label: 'app=node-exporter'
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ready]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
