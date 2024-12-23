@@ -1,0 +1,229 @@
+// =============================================================================
+// Login Page Styles
+// Version: 1.0.0
+// Description: SCSS styles for the RFID Asset Tracking System login page
+// implementing Material Design principles and WCAG 2.1 Level AA compliance
+// =============================================================================
+
+@use '../base/variables' as *;
+@use '../base/typography' as *;
+@use '../themes/light' as *;
+
+// =============================================================================
+// Mixins
+// =============================================================================
+
+// Enhanced focus ring for accessibility
+@mixin focus-ring {
+  &:focus-visible {
+    outline: $form-elements-focus-ring-width solid $form-elements-focus-ring-color;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(map-get($colors, primary, main), 0.2);
+  }
+}
+
+// Form accessibility enhancements
+@mixin form-accessibility {
+  input, button {
+    min-height: $form-elements-input-height;
+    border-radius: $form-elements-border-radius;
+    
+    &:focus {
+      @include focus-ring;
+    }
+    
+    // High contrast mode support
+    @media (forced-colors: active) {
+      border: 2px solid currentColor;
+    }
+  }
+
+  label {
+    color: map-get($colors, text, primary);
+    font-size: map-get($typography, font-sizes, base);
+    font-weight: map-get($typography, font-weights, medium);
+    margin-bottom: spacing(small);
+  }
+}
+
+// =============================================================================
+// Variables
+// =============================================================================
+
+$form-elements: (
+  input-height: 48px,
+  button-height: 48px,
+  border-radius: 4px,
+  focus-ring-color: map-get($colors, primary, main),
+  focus-ring-width: 2px
+);
+
+// =============================================================================
+// Functions
+// =============================================================================
+
+@function get-form-spacing($base-spacing) {
+  $min-touch-target: 48px; // WCAG touch target size
+  @return max($base-spacing, $min-touch-target);
+}
+
+// =============================================================================
+// Login Page Styles
+// =============================================================================
+
+.login-page {
+  display: flex;
+  min-height: 100vh;
+  background-image: url('/assets/images/login-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-color: map-get($colors, surface, background);
+  position: relative;
+  z-index: map-get($z-indices, dropdown);
+
+  // Accessibility - Ensure text remains readable on background
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+  }
+}
+
+.login-container {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+  padding: spacing(large);
+  background-color: map-get($colors, surface, paper);
+  border-radius: map-get($border-radius, medium);
+  box-shadow: create-elevation(2);
+  position: relative;
+  z-index: map-get($z-indices, modal);
+  
+  // Ensure container is visible in high contrast mode
+  @media (forced-colors: active) {
+    border: 1px solid currentColor;
+  }
+
+  // Animation for smooth entry
+  animation: fadeIn 0.3s map-get($animation, easing, standard);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: spacing(large);
+  
+  h1 {
+    color: map-get($colors, text, primary);
+    font-size: map-get($typography, font-sizes, 2xl);
+    font-weight: map-get($typography, font-weights, bold);
+    margin-bottom: spacing(medium);
+  }
+
+  p {
+    color: map-get($colors, text, secondary);
+    font-size: map-get($typography, font-sizes, base);
+    line-height: map-get($typography, line-heights, base);
+  }
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(medium);
+  width: 100%;
+  @include form-accessibility;
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: spacing(small);
+  }
+
+  input {
+    width: 100%;
+    padding: spacing(medium);
+    border: 1px solid map-get($colors, action, focus);
+    background-color: map-get($colors, surface, background);
+    color: map-get($colors, text, primary);
+    transition: border-color 0.2s map-get($animation, easing, standard);
+
+    &:hover {
+      border-color: map-get($colors, text, primary);
+    }
+
+    &::placeholder {
+      color: map-get($colors, text, secondary);
+    }
+  }
+
+  button {
+    width: 100%;
+    height: $form-elements-button-height;
+    background-color: map-get($colors, primary, main);
+    color: map-get($colors, primary, contrast);
+    border: none;
+    font-weight: map-get($typography, font-weights, medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background-color 0.2s map-get($animation, easing, standard);
+
+    &:hover {
+      background-color: map-get($colors, primary, dark);
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &:disabled {
+      background-color: map-get($colors, action, disabled);
+      cursor: not-allowed;
+    }
+  }
+}
+
+// =============================================================================
+// Responsive Design
+// =============================================================================
+
+@media (max-width: map-get($breakpoints, mobile)) {
+  .login-container {
+    margin: spacing(small);
+    padding: spacing(medium);
+    width: calc(100% - #{spacing(small) * 2});
+  }
+
+  .login-header {
+    h1 {
+      font-size: map-get($typography, font-sizes, xl);
+    }
+  }
+}
+
+@media (min-width: map-get($breakpoints, tablet)) {
+  .login-container {
+    padding: spacing(large);
+    max-width: 480px;
+  }
+}
+
+// =============================================================================
+// Animations
+// =============================================================================
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
