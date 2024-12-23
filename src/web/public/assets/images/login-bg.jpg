@@ -1,0 +1,48 @@
+<!-- Implementation in HTML should include: -->
+<picture>
+    <source 
+        srcset="/assets/images/login-bg.webp" 
+        type="image/webp"
+        media="(min-width: 1024px)"
+    >
+    <img 
+        src="/assets/images/login-bg.jpg"
+        width="1920"
+        height="1080"
+        fetchpriority="high"
+        loading="eager"
+        role="presentation"
+        aria-hidden="true"
+        decoding="async"
+        style="object-fit: cover;"
+        alt=""
+    >
+</picture>
+```
+
+5. Server Configuration:
+```apache
+# Apache configuration for optimal serving
+<Files "login-bg.jpg">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+    Header set Vary "Accept-Encoding"
+</Files>
+```
+
+6. Image Processing Commands:
+```bash
+# Generate optimized JPEG
+convert login-bg-source.jpg \
+    -strip \
+    -interlace Plane \
+    -quality 85 \
+    -colorspace sRGB \
+    -resize 1920x1080 \
+    login-bg.jpg
+
+# Generate WebP variant
+cwebp -q 85 login-bg.jpg -o login-bg.webp
+
+# Generate responsive variants
+convert login-bg.jpg -resize 1280x720 login-bg-tablet.jpg
+convert login-bg.jpg -resize 640x360 login-bg-mobile.jpg
