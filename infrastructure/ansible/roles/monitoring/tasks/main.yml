@@ -1,0 +1,168 @@
+---
+# Ansible tasks for deploying and configuring monitoring stack
+# Version: 1.0.0
+# Purpose: Deploy and configure Prometheus, Grafana, and ELK Stack with high availability
+
+# Create required directories with secure permissions
+- name: Create monitoring directories with secure permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0750'
+    owner: "{{ monitoring_user | default('prometheus') }}"
+    group: "{{ monitoring_group | default('prometheus') }}"
+  loop:
+    - /etc/prometheus
+    - /etc/prometheus/rules
+    - /etc/grafana
+    - /etc/grafana/provisioning
+    - /etc/grafana/provisioning/datasources
+    - /etc/grafana/provisioning/dashboards
+    - /var/lib/prometheus
+    - /var/lib/grafana
+    - /etc/elasticsearch
+    - /etc/kibana
+    - /var/lib/elasticsearch
+    - /var/log/prometheus
+    - /var/log/grafana
+
+# Deploy Prometheus configuration
+- name: Deploy Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    mode: '0640'
+    owner: "{{ monitoring_user | default('prometheus') }}"
+    group: "{{ monitoring_group | default('prometheus') }}"
+    validate: /usr/local/bin/promtool check config %s
+  notify: restart prometheus
+
+# Deploy Prometheus alert rules
+- name: Deploy Prometheus alert rules
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/etc/prometheus/rules/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    mode: '0640'
+    owner: "{{ monitoring_user | default('prometheus') }}"
+    group: "{{ monitoring_group | default('prometheus') }}"
+    validate: /usr/local/bin/promtool check rules %s
+  with_fileglob:
+    - "templates/rules/*.yml.j2"
+  notify: restart prometheus
+
+# Deploy Grafana configuration
+- name: Deploy Grafana configuration
+  ansible.builtin.template:
+    src: grafana.ini.j2
+    dest: /etc/grafana/grafana.ini
+    mode: '0640'
+    owner: "{{ grafana_user | default('grafana') }}"
+    group: "{{ grafana_group | default('grafana') }}"
+  notify: restart grafana
+
+# Deploy Prometheus container with HA configuration
+- name: Deploy Prometheus container
+  community.docker.docker_container:
+    name: prometheus
+    image: "prom/prometheus:{{ prometheus_version | default('v2.45.0') }}"
+    state: started
+    restart_policy: unless-stopped
+    network_mode: host
+    volumes:
+      - /etc/prometheus:/etc/prometheus:ro
+      - /var/lib/prometheus:/prometheus:rw
+      - /var/log/prometheus:/var/log/prometheus:rw
+    ports:
+      - "{{ prometheus_port | default('9090') }}:9090"
+    env:
+      TZ: "{{ timezone | default('UTC') }}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time={{ prometheus_retention | default('15d') }}
+      - --web.enable-lifecycle
+      - --web.enable-admin-api
+    health_check:
+      test: ["CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    memory: "{{ prometheus_memory | default('2g') }}"
+    memory_reservation: "{{ prometheus_memory_reservation | default('1g') }}"
+    cpu_shares: 512
+    labels:
+      environment: "{{ environment | default('production') }}"
+      service: prometheus
+
+# Deploy Grafana container
+- name: Deploy Grafana container
+  community.docker.docker_container:
+    name: grafana
+    image: "grafana/grafana:{{ grafana_version | default('9.5.2') }}"
+    state: started
+    restart_policy: unless-stopped
+    network_mode: host
+    volumes:
+      - /etc/grafana:/etc/grafana:ro
+      - /var/lib/grafana:/var/lib/grafana:rw
+      - /var/log/grafana:/var/log/grafana:rw
+    ports:
+      - "{{ grafana_port | default('3000') }}:3000"
+    env:
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+      GF_INSTALL_PLUGINS: "{{ grafana_plugins | default('grafana-piechart-panel,grafana-worldmap-panel') }}"
+    health_check:
+      test: ["CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    memory: "{{ grafana_memory | default('1g') }}"
+    memory_reservation: "{{ grafana_memory_reservation | default('512m') }}"
+    cpu_shares: 256
+    labels:
+      environment: "{{ environment | default('production') }}"
+      service: grafana
+
+# Configure Prometheus data source in Grafana
+- name: Configure Prometheus data source
+  ansible.builtin.template:
+    src: datasource-prometheus.yml.j2
+    dest: /etc/grafana/provisioning/datasources/prometheus.yml
+    mode: '0640'
+    owner: "{{ grafana_user | default('grafana') }}"
+    group: "{{ grafana_group | default('grafana') }}"
+  notify: restart grafana
+
+# Set up log rotation
+- name: Configure log rotation
+  ansible.builtin.template:
+    src: logrotate.j2
+    dest: /etc/logrotate.d/monitoring
+    mode: '0644'
+  vars:
+    log_files:
+      - /var/log/prometheus/*.log
+      - /var/log/grafana/*.log
+
+# Verify monitoring stack health
+- name: Verify Prometheus health
+  ansible.builtin.uri:
+    url: "http://localhost:{{ prometheus_port | default('9090') }}/-/healthy"
+    method: GET
+    status_code: 200
+  register: prometheus_health
+  retries: 5
+  delay: 10
+  until: prometheus_health.status == 200
+
+- name: Verify Grafana health
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grafana_port | default('3000') }}/api/health"
+    method: GET
+    status_code: 200
+  register: grafana_health
+  retries: 5
+  delay: 10
+  until: grafana_health.status == 200
