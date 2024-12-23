@@ -1,0 +1,134 @@
+# Grafana Configuration Template for RFID Asset Tracking System
+# Instance: {{ instance_name }}
+# Generated configuration optimized for production use
+
+#################################### Server ####################################
+[server]
+protocol = {{ grafana_protocol | default('https') }}
+http_port = {{ grafana_port | default('3000') }}
+domain = {{ grafana_domain }}
+root_url = {{ grafana_root_url | default('%(protocol)s://%(domain)s:%(http_port)s/') }}
+serve_from_sub_path = {{ grafana_serve_from_sub_path | default('false') }}
+read_timeout = 30s
+write_timeout = 30s
+max_connections = 100
+
+#################################### Security ####################################
+[security]
+# Admin account settings
+admin_user = {{ grafana_admin_user }}
+admin_password = {{ grafana_admin_password }}
+secret_key = {{ grafana_secret_key }}
+
+# Security enhancements
+disable_gravatar = true
+cookie_secure = true
+cookie_samesite = strict
+allow_embedding = false
+
+# HTTP security headers
+strict_transport_security = true
+strict_transport_security_max_age_seconds = 31536000
+x_content_type_options = true
+x_xss_protection = true
+
+#################################### Authentication ####################################
+[auth]
+# Session settings
+login_cookie_name = grafana_session
+login_maximum_inactive_lifetime_days = 7
+login_maximum_lifetime_days = 30
+token_rotation_interval_minutes = 10
+
+# Login settings
+disable_login_form = false
+oauth_auto_login = false
+signout_redirect_url =
+disable_signout_menu = false
+
+#################################### Database ####################################
+[database]
+type = {{ grafana_db_type | default('postgresql') }}
+host = {{ grafana_db_host | default('localhost:5432') }}
+name = {{ grafana_db_name | default('grafana') }}
+user = {{ grafana_db_user }}
+password = {{ grafana_db_password }}
+ssl_mode = verify-full
+max_open_conn = 100
+max_idle_conn = 50
+conn_max_lifetime = 14400
+
+#################################### Dashboards ####################################
+[dashboards]
+# Version control settings
+versions_to_keep = 20
+min_refresh_interval = 5s
+default_home_dashboard_path = /etc/grafana/provisioning/dashboards/asset-tracking.json
+
+# Auto-save settings
+auto_save_interval_seconds = 60
+min_refresh_interval_seconds = 5
+max_dashboard_versions = 50
+
+#################################### Unified Alerting ####################################
+[unified_alerting]
+enabled = true
+execute_alerts = true
+evaluation_timeout = 30s
+max_attempts = 3
+min_interval = 10s
+max_annotation_length = 1000
+concurrent_render_limit = 5
+
+#################################### Metrics Collection ####################################
+[metrics]
+enabled = true
+basic_auth_username = {{ grafana_metrics_basic_auth_username }}
+basic_auth_password = {{ grafana_metrics_basic_auth_password }}
+interval_seconds = {{ metrics_interval }}
+disable_total_stats = false
+enabled_collectors = cpu,memory,go,process
+
+#################################### Logging ####################################
+[log]
+mode = console file
+level = info
+filters = {{ grafana_log_filters | default('filtering.*:debug') }}
+console_level = info
+console_format = json
+file_format = json
+log_rotate = true
+max_lines = 1000000
+max_size_shift = 28
+daily_rotate = true
+
+#################################### SMTP / Alerting ####################################
+[smtp]
+enabled = {{ grafana_smtp_enabled | default('true') }}
+host = {{ grafana_smtp_host | default('localhost:25') }}
+user = {{ grafana_smtp_user | default('') }}
+password = {{ grafana_smtp_password | default('') }}
+from_address = {{ grafana_smtp_from_address | default('grafana@localhost') }}
+from_name = {{ grafana_smtp_from_name | default('Grafana RFID Monitoring') }}
+
+#################################### External Image Storage ####################################
+[external_image_storage]
+provider = {{ grafana_image_storage_provider | default('local') }}
+
+#################################### Rendering ####################################
+[rendering]
+server_url = {{ grafana_rendering_server_url | default('http://localhost:8081/render') }}
+callback_url = {{ grafana_rendering_callback_url | default('http://localhost:3000/') }}
+concurrent_render_limit = 30
+
+#################################### Feature Toggles ####################################
+[feature_toggles]
+enable = publicDashboards,newNavigation,correlations,reportingV2
+
+#################################### Plugins ####################################
+[plugins]
+enable_alpha = false
+app_tls_skip_verify_insecure = false
+allow_loading_unsigned_plugins = {{ grafana_plugins_unsigned | default('') }}
+plugin_admin_enabled = true
+plugin_admin_external_manage_enabled = false
