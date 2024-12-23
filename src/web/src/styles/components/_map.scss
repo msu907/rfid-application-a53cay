@@ -1,0 +1,260 @@
+// =============================================================================
+// Map Component Styles
+// Version: 1.0.0
+// Dependencies:
+// - leaflet ^1.9.4
+// - leaflet.markercluster ^1.5.3
+// =============================================================================
+
+@use 'sass:map';
+@use '../base/variables' as *;
+
+// =============================================================================
+// Custom Properties
+// =============================================================================
+
+:root {
+  // Container Heights
+  --map-container-height: #{map-get($map-container-height, 'default')};
+  --map-container-height-mobile: #{map-get($map-container-height, 'mobile')};
+  --map-container-height-tablet: #{map-get($map-container-height, 'tablet')};
+  --map-container-height-fullscreen: #{map-get($map-container-height, 'fullscreen')};
+
+  // Colors
+  --map-marker-default: #{map-get($map-marker-colors, 'default')};
+  --map-marker-selected: #{map-get($map-marker-colors, 'selected')};
+  --map-marker-cluster: #{map-get($map-marker-colors, 'cluster')};
+  --map-marker-hover: #{map-get($map-marker-colors, 'hover')};
+  --map-marker-active: #{map-get($map-marker-colors, 'active')};
+  --map-marker-disabled: #{map-get($map-marker-colors, 'disabled')};
+
+  // Transitions
+  --map-transition-duration: #{map-get($map-transitions, 'duration')};
+  --map-transition-timing: #{map-get($map-transitions, 'timing')};
+}
+
+// =============================================================================
+// Map Container
+// =============================================================================
+
+.map-container {
+  position: relative;
+  width: 100%;
+  height: var(--map-container-height);
+  border-radius: map-get($border-radius, 'medium');
+  overflow: hidden;
+  contain: layout size;
+  will-change: transform;
+  box-shadow: map-get($shadows, 'medium');
+  transition: all var(--map-transition-duration) var(--map-transition-timing);
+
+  // Responsive height adjustments
+  @media (max-width: map-get($breakpoints, 'mobile')) {
+    height: var(--map-container-height-mobile);
+    border-radius: map-get($border-radius, 'small');
+  }
+
+  @media (min-width: map-get($breakpoints, 'tablet')) {
+    height: var(--map-container-height-tablet);
+  }
+
+  &--fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--map-container-height-fullscreen);
+    z-index: $map-control-z-index;
+    border-radius: 0;
+  }
+}
+
+// =============================================================================
+// Map Controls
+// =============================================================================
+
+.map-controls {
+  position: absolute;
+  right: spacing('medium');
+  bottom: spacing('medium');
+  z-index: $map-control-z-index;
+  display: flex;
+  flex-direction: column;
+  gap: spacing('small');
+
+  @media (max-width: map-get($breakpoints, 'mobile')) {
+    right: spacing('base');
+    bottom: spacing('base');
+  }
+}
+
+.map-control {
+  background-color: map-get($colors, 'background', 'default');
+  border-radius: map-get($border-radius, 'small');
+  padding: spacing('small');
+  box-shadow: map-get($shadows, 'low');
+  cursor: pointer;
+  transition: all var(--map-transition-duration) var(--map-transition-timing);
+
+  &:hover {
+    box-shadow: map-get($shadows, 'medium');
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// =============================================================================
+// Map Markers
+// =============================================================================
+
+.map-marker {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--map-marker-default);
+  border: 2px solid map-get($colors, 'background', 'default');
+  box-shadow: map-get($shadows, 'low');
+  transition: all var(--map-transition-duration) var(--map-transition-timing);
+  cursor: pointer;
+  transform-origin: center;
+
+  &:hover {
+    transform: scale(1.1);
+    background-color: var(--map-marker-hover);
+    box-shadow: map-get($shadows, 'medium');
+  }
+
+  &--selected {
+    background-color: var(--map-marker-selected);
+    transform: scale(1.2);
+    z-index: $map-control-z-index;
+  }
+
+  &--active {
+    background-color: var(--map-marker-active);
+  }
+
+  &--disabled {
+    background-color: var(--map-marker-disabled);
+    cursor: not-allowed;
+  }
+}
+
+// =============================================================================
+// Marker Clusters
+// =============================================================================
+
+.marker-cluster {
+  background-color: rgba(map-get($colors, 'background', 'default'), 0.8);
+  border: 2px solid var(--map-marker-cluster);
+  border-radius: 50%;
+  color: map-get($colors, 'text', 'primary');
+  text-align: center;
+  font-weight: map-get($typography, 'font-weights', 'medium');
+  transition: all var(--map-transition-duration) var(--map-transition-timing);
+
+  div {
+    width: 30px;
+    height: 30px;
+    margin-left: -2px;
+    margin-top: -2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: map-get($typography, 'font-sizes', 'sm');
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: map-get($shadows, 'medium');
+  }
+
+  &--small {
+    width: 35px;
+    height: 35px;
+  }
+
+  &--medium {
+    width: 45px;
+    height: 45px;
+  }
+
+  &--large {
+    width: 55px;
+    height: 55px;
+  }
+}
+
+// =============================================================================
+// Map Popups
+// =============================================================================
+
+.map-popup {
+  .leaflet-popup-content-wrapper {
+    border-radius: map-get($border-radius, 'medium');
+    padding: spacing('base');
+    box-shadow: map-get($shadows, 'medium');
+  }
+
+  .leaflet-popup-tip {
+    box-shadow: map-get($shadows, 'low');
+  }
+
+  .leaflet-popup-content {
+    margin: 0;
+    min-width: 200px;
+
+    @media (max-width: map-get($breakpoints, 'mobile')) {
+      min-width: 150px;
+    }
+  }
+}
+
+// =============================================================================
+// Accessibility Enhancements
+// =============================================================================
+
+.map-container {
+  // Keyboard focus indicators
+  &:focus-visible {
+    outline: 3px solid map-get($colors, 'primary', 'main');
+    outline-offset: 2px;
+  }
+
+  // Screen reader only text
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+}
+
+// =============================================================================
+// Print Styles
+// =============================================================================
+
+@media print {
+  .map-container {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    height: 500px !important;
+  }
+
+  .map-controls {
+    display: none;
+  }
+}
