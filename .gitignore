@@ -1,0 +1,140 @@
+# Environment Files
+*.env
+*.env.local
+*.env.development
+*.env.production
+.env.*
+
+# Build and Compilation
+dist/
+build/
+target/
+.next/
+out/
+*.class
+
+# Dependencies
+node_modules/
+venv/
+.pip-cache/
+.gradle/
+.mvn/
+
+# IDE and Editor
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+*.sublime-*
+.metadata/
+*.swp
+*.swo
+
+# Logs and Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+debug.log
+logs/
+debug/
+
+# Testing and Coverage
+coverage/
+.nyc_output/
+junit/
+test-results/
+htmlcov/
+.coverage
+.tox/
+
+# System Files
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+*~.nib
+desktop.ini
+
+# Python Specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Infrastructure
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+.terraformrc
+terraform.rc
+.terraform.lock.hcl
+
+# Security
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+kubeconfig
+.kube/
+.ssh/
+
+# Docker
+.docker/
+*.env.docker
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary Files
+tmp/
+temp/
+.temp/
+*.tmp
+*.bak
+*.swp
+
+# Package Managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated Documentation
+docs/_build/
+site/
+.docusaurus/
+javadoc/
+apidoc/
+
+# Miscellaneous
+.cache/
+.local/
+.bash_history
+.node_repl_history
+.python_history
+.npm/
+.yarn/
+.yarnrc
+.npmrc
