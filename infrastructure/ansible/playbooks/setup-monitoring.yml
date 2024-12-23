@@ -1,0 +1,276 @@
+---
+# Setup High-Availability Monitoring Stack for RFID Asset Tracking System
+# Version: 1.0.0
+# Dependencies:
+# - community.grafana v1.5.0
+# - community.docker v3.4.0
+# - community.kubernetes v2.0.0
+# - elastic.elasticsearch v7.17.0
+
+- name: Setup High-Availability Monitoring Stack
+  hosts: monitoring_servers
+  become: true
+  
+  vars:
+    prometheus_version: "v2.45.0"
+    grafana_version: "9.5.0"
+    elk_version: "7.17.0"
+    monitoring_namespace: "monitoring"
+    backup_retention_days: 30
+    alert_threshold_latency_ms: 500
+    alert_threshold_uptime_percent: 99.9
+    prometheus_replicas: 2
+    grafana_replicas: 2
+    elasticsearch_replicas: 3
+
+  pre_tasks:
+    - name: Verify minimum system requirements
+      assert:
+        that:
+          - ansible_memtotal_mb >= 16384  # Minimum 16GB RAM
+          - ansible_processor_vcpus >= 4   # Minimum 4 vCPUs
+        msg: "System does not meet minimum requirements"
+
+  tasks:
+    - name: Create monitoring namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ monitoring_namespace }}"
+        state: present
+
+    - name: Deploy Prometheus HA Pair
+      block:
+        - name: Create Prometheus ConfigMap
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: prometheus-config
+                namespace: "{{ monitoring_namespace }}"
+              data:
+                prometheus.yml: "{{ lookup('file', '../monitoring/prometheus/prometheus.yml') }}"
+                alerts.yml: "{{ lookup('file', '../monitoring/prometheus/rules/alerts.yml') }}"
+
+        - name: Deploy Prometheus StatefulSet
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: apps/v1
+              kind: StatefulSet
+              metadata:
+                name: prometheus
+                namespace: "{{ monitoring_namespace }}"
+              spec:
+                replicas: "{{ prometheus_replicas }}"
+                selector:
+                  matchLabels:
+                    app: prometheus
+                serviceName: prometheus
+                template:
+                  metadata:
+                    labels:
+                      app: prometheus
+                  spec:
+                    containers:
+                      - name: prometheus
+                        image: "prom/prometheus:{{ prometheus_version }}"
+                        args:
+                          - "--config.file=/etc/prometheus/prometheus.yml"
+                          - "--storage.tsdb.path=/prometheus"
+                          - "--storage.tsdb.retention.time=15d"
+                          - "--web.enable-lifecycle"
+                          - "--web.enable-admin-api"
+                        volumeMounts:
+                          - name: config
+                            mountPath: /etc/prometheus
+                          - name: data
+                            mountPath: /prometheus
+                    volumes:
+                      - name: config
+                        configMap:
+                          name: prometheus-config
+                      - name: data
+                        persistentVolumeClaim:
+                          claimName: prometheus-data
+
+    - name: Deploy Grafana Cluster
+      block:
+        - name: Create Grafana ConfigMap
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: grafana-datasources
+                namespace: "{{ monitoring_namespace }}"
+              data:
+                datasource.yml: "{{ lookup('file', '../monitoring/grafana/provisioning/datasources/datasource.yml') }}"
+
+        - name: Deploy Grafana StatefulSet
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: apps/v1
+              kind: StatefulSet
+              metadata:
+                name: grafana
+                namespace: "{{ monitoring_namespace }}"
+              spec:
+                replicas: "{{ grafana_replicas }}"
+                selector:
+                  matchLabels:
+                    app: grafana
+                serviceName: grafana
+                template:
+                  metadata:
+                    labels:
+                      app: grafana
+                  spec:
+                    containers:
+                      - name: grafana
+                        image: "grafana/grafana:{{ grafana_version }}"
+                        env:
+                          - name: GF_SECURITY_ADMIN_PASSWORD
+                            valueFrom:
+                              secretKeyRef:
+                                name: grafana-admin
+                                key: password
+                        volumeMounts:
+                          - name: datasources
+                            mountPath: /etc/grafana/provisioning/datasources
+                          - name: data
+                            mountPath: /var/lib/grafana
+                    volumes:
+                      - name: datasources
+                        configMap:
+                          name: grafana-datasources
+                      - name: data
+                        persistentVolumeClaim:
+                          claimName: grafana-data
+
+    - name: Deploy ELK Stack
+      block:
+        - name: Deploy Elasticsearch Cluster
+          elastic.elasticsearch.elasticsearch_cluster:
+            name: rfid-logging
+            version: "{{ elk_version }}"
+            nodes: "{{ elasticsearch_replicas }}"
+            heap_size: "4g"
+            config:
+              cluster.name: rfid-logging
+              discovery.type: kubernetes
+              xpack.security.enabled: true
+              xpack.monitoring.enabled: true
+
+        - name: Deploy Logstash
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: logstash
+                namespace: "{{ monitoring_namespace }}"
+              spec:
+                replicas: 2
+                selector:
+                  matchLabels:
+                    app: logstash
+                template:
+                  metadata:
+                    labels:
+                      app: logstash
+                  spec:
+                    containers:
+                      - name: logstash
+                        image: "docker.elastic.co/logstash/logstash:{{ elk_version }}"
+                        volumeMounts:
+                          - name: config
+                            mountPath: /usr/share/logstash/pipeline
+                    volumes:
+                      - name: config
+                        configMap:
+                          name: logstash-pipeline
+
+    - name: Configure Backup Procedures
+      block:
+        - name: Create Backup CronJob
+          kubernetes.core.k8s:
+            state: present
+            definition:
+              apiVersion: batch/v1beta1
+              kind: CronJob
+              metadata:
+                name: monitoring-backup
+                namespace: "{{ monitoring_namespace }}"
+              spec:
+                schedule: "0 1 * * *"  # Daily at 1 AM
+                jobTemplate:
+                  spec:
+                    template:
+                      spec:
+                        containers:
+                          - name: backup
+                            image: bitnami/kubectl
+                            command:
+                              - /bin/sh
+                              - -c
+                              - |
+                                kubectl exec -n {{ monitoring_namespace }} prometheus-0 -- tar czf /backup/prometheus-$(date +%Y%m%d).tar.gz /prometheus
+                                kubectl exec -n {{ monitoring_namespace }} grafana-0 -- tar czf /backup/grafana-$(date +%Y%m%d).tar.gz /var/lib/grafana
+                        restartPolicy: OnFailure
+
+    - name: Verify Monitoring Stack
+      block:
+        - name: Wait for Prometheus
+          kubernetes.core.k8s_info:
+            kind: StatefulSet
+            name: prometheus
+            namespace: "{{ monitoring_namespace }}"
+            wait: yes
+            wait_timeout: 300
+            wait_condition:
+              type: Ready
+              status: "True"
+
+        - name: Wait for Grafana
+          kubernetes.core.k8s_info:
+            kind: StatefulSet
+            name: grafana
+            namespace: "{{ monitoring_namespace }}"
+            wait: yes
+            wait_timeout: 300
+            wait_condition:
+              type: Ready
+              status: "True"
+
+        - name: Verify Elasticsearch Cluster Health
+          uri:
+            url: http://elasticsearch:9200/_cluster/health
+            method: GET
+            return_content: yes
+          register: es_health
+          until: es_health.json.status == "green"
+          retries: 30
+          delay: 10
+
+  handlers:
+    - name: Restart Prometheus
+      kubernetes.core.k8s:
+        state: absent
+        kind: Pod
+        namespace: "{{ monitoring_namespace }}"
+        label_selectors:
+          - app=prometheus
+
+    - name: Restart Grafana
+      kubernetes.core.k8s:
+        state: absent
+        kind: Pod
+        namespace: "{{ monitoring_namespace }}"
+        label_selectors:
+          - app=grafana
