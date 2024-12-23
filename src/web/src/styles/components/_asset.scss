@@ -1,0 +1,258 @@
+// =============================================================================
+// Asset Component Styles
+// Version: 1.0.0
+// Description: Comprehensive styles for asset-related components implementing
+// Material Design standards with enhanced accessibility and responsive design
+// =============================================================================
+
+@use '../base/variables' as *;
+@use '../base/typography' as typography;
+
+// =============================================================================
+// Asset Card Variables
+// =============================================================================
+
+$asset-card: (
+  'min-width': 280px,
+  'max-width': 400px,
+  'border-radius': map-get($border-radius, 'small'),
+  'padding': map-get($spacing, 'base'),
+  'transition-duration': map-get($animation, 'duration', 'short'),
+  'transition-timing': map-get($animation, 'easing', 'standard'),
+  'shadow-hover-y': -2px
+);
+
+// =============================================================================
+// Asset Grid Variables
+// =============================================================================
+
+$asset-grid: (
+  'gap': map-get($spacing, 'medium'),
+  'columns': (
+    'mobile': 1,
+    'tablet': 2,
+    'desktop': 3,
+    'wide': 4
+  ),
+  'max-width': map-get($breakpoints, 'wide')
+);
+
+// =============================================================================
+// Mixins
+// =============================================================================
+
+@mixin asset-hover {
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(map-get($asset-card, 'shadow-hover-y'));
+      box-shadow: map-get($shadows, 'medium');
+    }
+  }
+
+  @media (hover: none) {
+    &:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid map-get($colors, 'primary', 'main');
+    outline-offset: 2px;
+  }
+}
+
+@mixin asset-status($status) {
+  $status-colors: (
+    'active': map-get($colors, 'secondary', 'main'),
+    'inactive': map-get($colors, 'error', 'main'),
+    'warning': #f2994a,
+    'processing': map-get($colors, 'primary', 'main')
+  );
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: map-get($spacing, 'small');
+    right: map-get($spacing, 'small');
+    width: 8px;
+    height: 8px;
+    border-radius: map-get($border-radius, 'round');
+    background-color: map-get($status-colors, $status);
+    transition: background-color map-get($animation, 'duration', 'short') 
+                map-get($animation, 'easing', 'standard');
+  }
+}
+
+// =============================================================================
+// Asset Card Component
+// =============================================================================
+
+.asset-card {
+  display: flex;
+  flex-direction: column;
+  min-width: map-get($asset-card, 'min-width');
+  max-width: map-get($asset-card, 'max-width');
+  padding: map-get($asset-card, 'padding');
+  border-radius: map-get($asset-card, 'border-radius');
+  background-color: map-get($colors, 'background', 'paper');
+  box-shadow: map-get($shadows, 'low');
+  position: relative;
+  cursor: pointer;
+  will-change: transform, box-shadow;
+  transition: 
+    transform map-get($asset-card, 'transition-duration') map-get($asset-card, 'transition-timing'),
+    box-shadow map-get($asset-card, 'transition-duration') map-get($asset-card, 'transition-timing');
+
+  @include asset-hover;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: map-get($spacing, 'medium');
+  }
+
+  &__title {
+    @extend .typography-styles;
+    font-size: map-get($typography, 'font-sizes', 'lg');
+    font-weight: map-get($typography, 'font-weights', 'medium');
+    color: map-get($colors, 'text', 'primary');
+    margin: 0;
+  }
+
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: map-get($spacing, 'small');
+  }
+
+  &__metadata {
+    font-size: map-get($typography, 'font-sizes', 'sm');
+    color: map-get($colors, 'text', 'secondary');
+  }
+
+  &__image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: map-get($border-radius, 'small');
+    margin-bottom: map-get($spacing, 'medium');
+  }
+}
+
+// =============================================================================
+// Asset Grid Layout
+// =============================================================================
+
+.asset-grid {
+  display: grid;
+  gap: map-get($asset-grid, 'gap');
+  width: 100%;
+  max-width: map-get($asset-grid, 'max-width');
+  margin: 0 auto;
+  padding: map-get($spacing, 'medium');
+
+  // Responsive grid columns
+  grid-template-columns: 1fr;
+
+  @media (min-width: map-get($breakpoints, 'tablet')) {
+    grid-template-columns: repeat(
+      map-get($asset-grid, 'columns', 'tablet'),
+      1fr
+    );
+  }
+
+  @media (min-width: map-get($breakpoints, 'desktop')) {
+    grid-template-columns: repeat(
+      map-get($asset-grid, 'columns', 'desktop'),
+      1fr
+    );
+  }
+
+  @media (min-width: map-get($breakpoints, 'wide')) {
+    grid-template-columns: repeat(
+      map-get($asset-grid, 'columns', 'wide'),
+      1fr
+    );
+  }
+}
+
+// =============================================================================
+// Asset List View
+// =============================================================================
+
+.asset-list {
+  width: 100%;
+  
+  &__item {
+    display: flex;
+    align-items: center;
+    padding: map-get($spacing, 'medium');
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    transition: background-color map-get($animation, 'duration', 'short')
+                map-get($animation, 'easing', 'standard');
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    @media (max-width: map-get($breakpoints, 'tablet')) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: map-get($spacing, 'small');
+    }
+  }
+}
+
+// =============================================================================
+// Asset Detail View
+// =============================================================================
+
+.asset-detail {
+  padding: map-get($spacing, 'large');
+  background-color: map-get($colors, 'background', 'paper');
+  border-radius: map-get($border-radius, 'medium');
+  box-shadow: map-get($shadows, 'medium');
+
+  &__header {
+    margin-bottom: map-get($spacing, 'large');
+  }
+
+  &__content {
+    display: grid;
+    gap: map-get($spacing, 'large');
+
+    @media (min-width: map-get($breakpoints, 'desktop')) {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  &__section {
+    margin-bottom: map-get($spacing, 'large');
+
+    &-title {
+      font-size: map-get($typography, 'font-sizes', 'lg');
+      font-weight: map-get($typography, 'font-weights', 'medium');
+      margin-bottom: map-get($spacing, 'medium');
+    }
+  }
+}
+
+// Status Variants
+.asset-card--active {
+  @include asset-status('active');
+}
+
+.asset-card--inactive {
+  @include asset-status('inactive');
+}
+
+.asset-card--warning {
+  @include asset-status('warning');
+}
+
+.asset-card--processing {
+  @include asset-status('processing');
+}
