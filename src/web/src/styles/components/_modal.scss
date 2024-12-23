@@ -1,0 +1,208 @@
+// =============================================================================
+// Modal Component Styles
+// Version: 1.0.0
+// Description: Material Design modal implementation with accessibility and
+// performance optimizations
+// =============================================================================
+
+@use '../base/variables' as *;
+
+// Modal size configuration
+$modal-sizes: (
+  'small': 400px,
+  'medium': 600px,
+  'large': 800px
+);
+
+// Animation configuration with reduced motion support
+$modal-animations: (
+  'duration': 0.3s,
+  'timing': cubic-bezier(0.4, 0, 0.2, 1),
+  'reduced-motion': 0.1s
+);
+
+// Elevation configuration following Material Design principles
+$modal-elevation: (
+  'resting': 0 8px 10px -5px rgba(0, 0, 0, 0.2),
+  'active': 0 16px 24px -10px rgba(0, 0, 0, 0.3)
+);
+
+// Mixins
+@mixin modal-elevation($state: 'resting') {
+  $shadow: map-get($modal-elevation, $state);
+  box-shadow: $shadow;
+  transition: box-shadow map-get($modal-animations, 'duration') map-get($modal-animations, 'timing');
+  transform: translateZ(0); // Force GPU acceleration
+  backface-visibility: hidden;
+}
+
+@mixin modal-focus-trap {
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid map-get($colors, 'primary', 'main');
+    outline-offset: 2px;
+  }
+
+  // Ensure focus trap for keyboard navigation
+  &[tabindex="-1"] {
+    outline: none;
+  }
+}
+
+// Animations
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-up {
+  from {
+    transform: translate3d(0, 20px, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+// Modal overlay styles
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: map-get($z-indices, 'modal');
+  
+  // Flexbox centering
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  // Animation and performance
+  animation: modal-fade-in map-get($modal-animations, 'duration') map-get($modal-animations, 'timing');
+  will-change: opacity;
+  contain: layout size paint;
+
+  // Accessibility
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: map-get($modal-animations, 'reduced-motion');
+  }
+
+  // Screen reader support
+  aria-modal: true;
+  role: dialog;
+}
+
+// Modal container styles
+.modal {
+  position: relative;
+  background: map-get($colors, 'background', 'default');
+  border-radius: map-get($spacing, 'medium');
+  max-height: 90vh;
+  width: 90%;
+  margin: map-get($spacing, 'medium');
+  
+  // Overflow handling
+  overflow: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  
+  // Animation and performance
+  animation: modal-slide-up map-get($modal-animations, 'duration') map-get($modal-animations, 'timing');
+  will-change: transform, opacity;
+  contain: content;
+  
+  // Material elevation
+  @include modal-elevation('resting');
+  
+  &:hover {
+    @include modal-elevation('active');
+  }
+  
+  // Accessibility
+  @include modal-focus-trap;
+  
+  // Touch optimization
+  touch-action: manipulation;
+  
+  // Responsive sizes
+  @each $size, $width in $modal-sizes {
+    &--#{$size} {
+      max-width: $width;
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: map-get($breakpoints, 'tablet')) {
+    width: 95%;
+    margin: map-get($spacing, 'small');
+    max-height: 95vh;
+  }
+
+  // Modal header
+  &__header {
+    padding: map-get($spacing, 'medium');
+    border-bottom: 1px solid map-get($colors, 'background', 'paper');
+    
+    h2 {
+      font-family: map-get($typography, 'font-family', 'primary');
+      font-size: map-get($typography, 'font-sizes', 'xl');
+      font-weight: map-get($typography, 'font-weights', 'medium');
+      margin: 0;
+      color: map-get($colors, 'text', 'primary');
+    }
+  }
+
+  // Modal content
+  &__content {
+    padding: map-get($spacing, 'medium');
+    overflow-y: auto;
+    
+    // Typography
+    font-family: map-get($typography, 'font-family', 'primary');
+    font-size: map-get($typography, 'font-sizes', 'base');
+    line-height: map-get($typography, 'line-heights', 'base');
+    color: map-get($colors, 'text', 'primary');
+  }
+
+  // Modal footer
+  &__footer {
+    padding: map-get($spacing, 'medium');
+    border-top: 1px solid map-get($colors, 'background', 'paper');
+    display: flex;
+    justify-content: flex-end;
+    gap: map-get($spacing, 'medium');
+  }
+
+  // Close button
+  &__close {
+    position: absolute;
+    top: map-get($spacing, 'medium');
+    right: map-get($spacing, 'medium');
+    padding: map-get($spacing, 'small');
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: map-get($colors, 'text', 'secondary');
+    
+    &:hover {
+      color: map-get($colors, 'text', 'primary');
+    }
+    
+    // Accessibility
+    &:focus-visible {
+      outline: 2px solid map-get($colors, 'primary', 'main');
+      outline-offset: 2px;
+    }
+  }
+}
