@@ -1,0 +1,196 @@
+// =============================================================================
+// Typography System
+// Version: 1.0.0
+// Description: Core typography styles implementing Material Design typography
+// system with enhanced accessibility features and responsive scaling
+// =============================================================================
+
+@use 'variables' as *;
+
+// Font Loading Optimization
+@mixin font-display-optimization {
+  font-display: swap;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Base HTML Typography Settings
+html {
+  font-size: 16px;
+  line-height: 1.5;
+  @include font-display-optimization;
+}
+
+body {
+  font-family: map-get($typography, 'font-family', 'primary');
+  font-size: map-get($typography, 'font-sizes', 'base');
+  color: map-get($colors, 'text', 'primary');
+  @include font-display-optimization;
+}
+
+// Line Height Calculator Function
+@function line-height-calc($font-size, $style-type: 'body') {
+  $ratio: if($style-type == 'heading', 1.2, 1.6);
+  $min-line-height: 1.2; // WCAG compliance
+  $calculated: $font-size * $ratio;
+  @return max($calculated, $min-line-height);
+}
+
+// Responsive Font Size Mixin
+@mixin responsive-font-size($size-map) {
+  @each $breakpoint, $size in $size-map {
+    @if $breakpoint == 'base' {
+      font-size: $size;
+    } @else {
+      @media (min-width: map-get($breakpoints, $breakpoint)) {
+        font-size: $size;
+      }
+    }
+  }
+}
+
+// Heading Styles
+@mixin heading-styles {
+  h1 {
+    font-size: var(--font-scale-h1, #{map-get($font-scale, 'h1')});
+    font-weight: map-get($typography, 'font-weights', 'bold');
+    line-height: map-get($typography, 'line-heights', 'tight');
+    letter-spacing: -0.02em;
+    margin-bottom: spacing('large');
+  }
+
+  h2 {
+    font-size: var(--font-scale-h2, #{map-get($font-scale, 'h2')});
+    font-weight: map-get($typography, 'font-weights', 'bold');
+    line-height: map-get($typography, 'line-heights', 'tight');
+    letter-spacing: -0.01em;
+    margin-bottom: spacing('medium');
+  }
+
+  h3 {
+    font-size: var(--font-scale-h3, #{map-get($font-scale, 'h3')});
+    font-weight: map-get($typography, 'font-weights', 'semibold');
+    line-height: map-get($typography, 'line-heights', 'snug');
+    margin-bottom: spacing('medium');
+  }
+
+  h4 {
+    font-size: var(--font-scale-h4, #{map-get($font-scale, 'h4')});
+    font-weight: map-get($typography, 'font-weights', 'semibold');
+    line-height: map-get($typography, 'line-heights', 'normal');
+    margin-bottom: spacing('base');
+  }
+
+  h5 {
+    font-size: var(--font-scale-h5, #{map-get($font-scale, 'h5')});
+    font-weight: map-get($typography, 'font-weights', 'medium');
+    line-height: map-get($typography, 'line-heights', 'normal');
+    margin-bottom: spacing('base');
+  }
+
+  h6 {
+    font-size: var(--font-scale-h6, #{map-get($font-scale, 'h6')});
+    font-weight: map-get($typography, 'font-weights', 'medium');
+    line-height: map-get($typography, 'line-heights', 'normal');
+    margin-bottom: spacing('base');
+  }
+}
+
+// Text Styles
+@mixin text-styles {
+  p {
+    font-size: map-get($typography, 'font-sizes', 'base');
+    font-weight: map-get($typography, 'font-weights', 'regular');
+    line-height: map-get($typography, 'line-heights', 'relaxed');
+    margin-bottom: spacing('medium');
+    max-width: 75ch; // Optimal reading length
+  }
+
+  small {
+    font-size: map-get($typography, 'font-sizes', 'sm');
+    font-weight: map-get($typography, 'font-weights', 'regular');
+    line-height: map-get($typography, 'line-heights', 'normal');
+  }
+
+  .lead {
+    font-size: map-get($typography, 'font-sizes', 'lg');
+    line-height: map-get($typography, 'line-heights', 'relaxed');
+    margin-bottom: spacing('large');
+  }
+}
+
+// Code Styles
+@mixin code-styles {
+  code {
+    font-family: map-get($typography, 'font-family', 'monospace');
+    font-size: map-get($typography, 'font-sizes', 'sm');
+    padding: spacing('small') spacing('base');
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: map-get($border-radius, 'small');
+    color: map-get($colors, 'text', 'primary');
+  }
+
+  pre code {
+    display: block;
+    padding: spacing('medium');
+    overflow-x: auto;
+    line-height: map-get($typography, 'line-heights', 'relaxed');
+  }
+}
+
+// Accessibility Enhancements
+@mixin accessibility-enhancements {
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+
+  .screen-reader-text {
+    @extend .visually-hidden;
+    &:focus {
+      clip: auto;
+      height: auto;
+      margin: 0;
+      overflow: visible;
+      position: static;
+      width: auto;
+    }
+  }
+}
+
+// Responsive Typography Implementation
+@mixin responsive-typography {
+  :root {
+    @each $breakpoint, $size in $breakpoints {
+      @media (min-width: $size) {
+        @each $heading, $scale in $font-scale {
+          --font-scale-#{$heading}: #{$scale};
+        }
+      }
+    }
+  }
+}
+
+// Apply all typography styles
+.typography-styles {
+  @include heading-styles;
+  @include text-styles;
+  @include code-styles;
+  @include accessibility-enhancements;
+  @include responsive-typography;
+}
+
+// Export typography styles
+:export {
+  heading-styles: heading-styles;
+  text-styles: text-styles;
+  code-styles: code-styles;
+  responsive-typography: responsive-typography;
+}
