@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": ["ES2022"],
+    "declaration": true,
+    "sourceMap": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "composite": true,
+    "incremental": true,
+    "baseUrl": ".",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "paths": {
+      "@/*": ["src/*"],
+      "@api-gateway/*": ["src/api-gateway/src/*"],
+      "@visualization-service/*": ["src/visualization-service/src/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "api-gateway/src/**/*.ts",
+    "visualization-service/src/**/*.ts",
+    "asset-service/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/tests/**",
+    "**/__mocks__/**"
+  ],
+  "references": [
+    {
+      "path": "./api-gateway/tsconfig.json"
+    },
+    {
+      "path": "./visualization-service/tsconfig.json"
+    }
+  ]
+}
