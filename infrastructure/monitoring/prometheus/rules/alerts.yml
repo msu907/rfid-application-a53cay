@@ -1,0 +1,129 @@
+# Prometheus Alert Rules Configuration
+# Version: 2.45.0
+# Purpose: Define critical system alerts and thresholds for RFID Asset Tracking System
+
+groups:
+  # Service Health Monitoring
+  - name: service_health
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service instance is down"
+          description: "Service instance has been down for 5 minutes"
+          runbook_url: "https://wiki.example.com/alerts/ServiceDown"
+
+      - alert: ServiceHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High service latency detected"
+          description: "Service latency above 500ms threshold"
+          runbook_url: "https://wiki.example.com/alerts/ServiceHighLatency"
+
+  # RFID Reader Performance
+  - name: rfid_performance
+    rules:
+      - alert: ReaderDown
+        expr: up{job="reader-service"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "RFID reader service is down"
+          description: "RFID reader service is down"
+          runbook_url: "https://wiki.example.com/alerts/ReaderDown"
+
+      - alert: HighReadLatency
+        expr: rfid_read_processing_duration_seconds > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High RFID read latency"
+          description: "RFID read processing latency above 500ms threshold"
+          runbook_url: "https://wiki.example.com/alerts/HighReadLatency"
+
+  # System Resource Utilization
+  - name: system_resources
+    rules:
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage above 80% threshold"
+          runbook_url: "https://wiki.example.com/alerts/HighCPUUsage"
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 1024
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage above 1GB threshold"
+          runbook_url: "https://wiki.example.com/alerts/HighMemoryUsage"
+
+  # Application Error Monitoring
+  - name: application_errors
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."} [5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: errors
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP 5xx error rate above 5%"
+          runbook_url: "https://wiki.example.com/alerts/HighErrorRate"
+
+      - alert: AssetServiceErrors
+        expr: increase(asset_service_exceptions_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: errors
+        annotations:
+          summary: "High asset service error rate"
+          description: "Asset service experiencing high exception rate"
+          runbook_url: "https://wiki.example.com/alerts/AssetServiceErrors"
+
+  # SLA Compliance Monitoring
+  - name: sla_compliance
+    rules:
+      - alert: UptimeBelow999
+        expr: avg_over_time(up[24h]) * 100 < 99.9
+        for: 1h
+        labels:
+          severity: critical
+          category: sla
+        annotations:
+          summary: "System uptime below SLA"
+          description: "System uptime has fallen below 99.9% SLA threshold"
+          runbook_url: "https://wiki.example.com/alerts/UptimeBelow999"
+
+      - alert: ReadProcessingLatencyHigh
+        expr: histogram_quantile(0.95, rate(rfid_read_processing_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: sla
+        annotations:
+          summary: "Read processing latency exceeds SLA"
+          description: "RFID read processing latency exceeds 500ms SLA threshold"
+          runbook_url: "https://wiki.example.com/alerts/ReadProcessingLatencyHigh"
