@@ -1,0 +1,197 @@
+name: Continuous Deployment
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+    branches: 
+      - main
+      - develop
+
+env:
+  TF_WORKSPACE: ${{ github.ref == 'refs/heads/main' && 'prod' || 'staging' }}
+  ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+  HELM_RELEASE_NAME: rfid-asset-tracking
+  DEPLOY_TIMESTAMP: ${{ github.event.timestamp }}
+  MONITORING_ENDPOINT: ${{ secrets.MONITORING_ENDPOINT }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.4.x"
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Configure Azure credentials
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Initialize Terraform
+        working-directory: ./infrastructure/terraform
+        run: |
+          terraform init \
+            -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
+            -backend-config="key=${ENVIRONMENT}.tfstate" \
+            -backend-config="access_key=${{ secrets.TF_STATE_ACCESS_KEY }}"
+
+      - name: Validate Terraform Configuration
+        working-directory: ./infrastructure/terraform
+        run: terraform validate
+
+      - name: Plan Infrastructure Changes
+        working-directory: ./infrastructure/terraform
+        run: |
+          terraform plan \
+            -var="environment=${ENVIRONMENT}" \
+            -var="location=${{ secrets.AZURE_LOCATION }}" \
+            -out=tfplan
+
+      - name: Apply Infrastructure Changes
+        working-directory: ./infrastructure/terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Save Infrastructure Outputs
+        id: tf-outputs
+        working-directory: ./infrastructure/terraform
+        run: |
+          echo "::set-output name=aks_cluster_name::$(terraform output -raw aks_cluster_name)"
+          echo "::set-output name=resource_group::$(terraform output -raw resource_group_name)"
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.ref != 'refs/heads/main'
+
+    steps:
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.25.0'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.11.0'
+
+      - name: Get AKS Credentials
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ needs.deploy-infrastructure.outputs.resource_group }}
+          cluster-name: ${{ needs.deploy-infrastructure.outputs.aks_cluster_name }}
+
+      - name: Deploy Blue Environment
+        run: |
+          helm upgrade --install ${HELM_RELEASE_NAME}-blue ./src/backend/helm \
+            --namespace staging \
+            --create-namespace \
+            --set environment=staging \
+            --set image.tag=${GITHUB_SHA} \
+            --set blueGreen.active=blue \
+            --wait
+
+      - name: Run Integration Tests
+        run: |
+          ./scripts/integration-tests.sh \
+            --endpoint="https://${HELM_RELEASE_NAME}-blue.staging.svc.cluster.local"
+
+      - name: Switch Traffic to Blue
+        if: success()
+        run: |
+          kubectl patch service ${HELM_RELEASE_NAME} \
+            --namespace staging \
+            --patch '{"spec": {"selector": {"deployment": "blue"}}}'
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [deploy-infrastructure, deploy-staging]
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.25.0'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.11.0'
+
+      - name: Get AKS Credentials
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ needs.deploy-infrastructure.outputs.resource_group }}
+          cluster-name: ${{ needs.deploy-infrastructure.outputs.aks_cluster_name }}
+
+      - name: Deploy Canary (10% traffic)
+        run: |
+          helm upgrade --install ${HELM_RELEASE_NAME} ./src/backend/helm \
+            --namespace production \
+            --create-namespace \
+            --set environment=production \
+            --set image.tag=${GITHUB_SHA} \
+            --set canary.enabled=true \
+            --set canary.weight=10 \
+            --wait
+
+      - name: Monitor Canary Metrics
+        run: |
+          ./scripts/monitor-deployment.sh \
+            --endpoint=${MONITORING_ENDPOINT} \
+            --deployment=${HELM_RELEASE_NAME} \
+            --threshold=99.9
+
+      - name: Progressive Rollout
+        if: success()
+        run: |
+          for weight in 25 50 75 100; do
+            helm upgrade ${HELM_RELEASE_NAME} ./src/backend/helm \
+              --namespace production \
+              --set canary.weight=$weight \
+              --wait
+            
+            ./scripts/monitor-deployment.sh \
+              --endpoint=${MONITORING_ENDPOINT} \
+              --deployment=${HELM_RELEASE_NAME} \
+              --threshold=99.9
+            
+            sleep 300
+          done
+
+      - name: Verify Production Deployment
+        run: |
+          ./scripts/verify-deployment.sh \
+            --namespace=production \
+            --release=${HELM_RELEASE_NAME}
+
+      - name: Notify Deployment Status
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: "Production deployment ${{ job.status }}"
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
