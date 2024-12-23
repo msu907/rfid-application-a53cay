@@ -1,0 +1,264 @@
+# Global configuration values applied across all services
+global:
+  imageRegistry: "rfidregistry.azurecr.io"
+  imagePullPolicy: IfNotPresent
+  environment: production
+  namespace: rfid-system
+  
+  # Enhanced monitoring configuration
+  monitoring:
+    enabled: true
+    scrapeInterval: 30s
+    prometheusAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9090"
+    grafanaEnabled: true
+    
+  # Enhanced security settings
+  security:
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 2000
+    networkPolicy:
+      enabled: true
+      ingressRules:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  name: ingress-nginx
+    tls:
+      enabled: true
+      certificateSecret: rfid-tls-secret
+
+# API Gateway Service Configuration
+api-gateway:
+  replicaCount: 2
+  image:
+    repository: api-gateway
+    tag: latest
+  ports:
+    http: 3000
+    grpc: 9000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: http
+    initialDelaySeconds: 20
+    periodSeconds: 10
+
+# Asset Service Configuration
+asset-service:
+  replicaCount: 3
+  image:
+    repository: asset-service
+    tag: latest
+  ports:
+    http: 8080
+    grpc: 9090
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 7
+    targetCPUUtilizationPercentage: 75
+  livenessProbe:
+    httpGet:
+      path: /actuator/health
+      port: http
+    initialDelaySeconds: 60
+    periodSeconds: 15
+  persistence:
+    enabled: true
+    storageClass: managed-premium
+    size: 10Gi
+
+# Reader Service Configuration
+reader-service:
+  replicaCount: 2
+  image:
+    repository: reader-service
+    tag: latest
+  ports:
+    http: 8081
+    llrp: 5084
+  resources:
+    limits:
+      cpu: 750m
+      memory: 768Mi
+    requests:
+      cpu: 300m
+      memory: 384Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app: reader-service
+
+# Visualization Service Configuration
+visualization-service:
+  replicaCount: 2
+  image:
+    repository: visualization-service
+    tag: latest
+  ports:
+    http: 3001
+    ws: 3002
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 75
+  socketIO:
+    enabled: true
+    pingTimeout: 5000
+    pingInterval: 10000
+
+# Database Configurations
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "14.5"
+  auth:
+    postgresPassword: "${POSTGRES_PASSWORD}"
+    database: rfid_assets
+  primary:
+    persistence:
+      enabled: true
+      storageClass: managed-premium
+      size: 50Gi
+  replication:
+    enabled: true
+    readReplicas: 2
+  metrics:
+    enabled: true
+
+influxdb:
+  enabled: true
+  image:
+    repository: influxdb
+    tag: "2.6"
+  persistence:
+    enabled: true
+    storageClass: managed-premium
+    size: 30Gi
+  auth:
+    admin:
+      token: "${INFLUXDB_ADMIN_TOKEN}"
+
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    password: "${REDIS_PASSWORD}"
+  master:
+    persistence:
+      enabled: true
+      storageClass: managed-premium
+      size: 8Gi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: rfid.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: rfid-tls-cert
+      hosts:
+        - rfid.example.com
+
+# Service Mesh Configuration
+istio:
+  enabled: true
+  mtls:
+    enabled: true
+  gateway:
+    enabled: true
+  virtualService:
+    enabled: true
+    hosts:
+      - rfid.example.com
+
+# Monitoring Stack
+prometheus:
+  enabled: true
+  alertmanager:
+    enabled: true
+    persistence:
+      enabled: true
+      size: 10Gi
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 10Gi
+  dashboards:
+    default:
+      rfid-system-dashboard:
+        json: |
+          {
+            "dashboard": "rfid-system",
+            "version": 1
+          }
+
+# Backup Configuration
+velero:
+  enabled: true
+  schedule: "0 1 * * *"
+  retention:
+    hourly: 24
+    daily: 7
+    weekly: 4
+    monthly: 12
