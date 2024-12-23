@@ -1,0 +1,106 @@
+# ConfigMap template for RFID Asset Tracking System service configurations
+# Helm Version: 3.11+
+# This template generates environment-specific configurations for all microservices
+
+{{- /*
+Validation helper template to ensure required values exist
+*/}}
+{{- define "validateRequiredValues" }}
+{{- if not .Values.global }}
+{{- fail "global configuration section is required in values.yaml" }}
+{{- end }}
+{{- if not .Values.global.environment }}
+{{- fail "global.environment is required" }}
+{{- end }}
+{{- if not .Values.global.region }}
+{{- fail "global.region is required" }}
+{{- end }}
+{{- end }}
+
+{{- /* Validate required values before rendering */}}
+{{- template "validateRequiredValues" . }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  namespace: {{ .Values.global.namespace | default "default" }}
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: configuration
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # Add checksum annotation to trigger pod restarts when config changes
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    meta.helm.sh/release-name: {{ .Release.Name }}
+    meta.helm.sh/release-namespace: {{ .Values.global.namespace | default "default" }}
+
+data:
+  # Global environment configuration
+  environment: {{ .Values.global.environment | quote }}
+  region: {{ .Values.global.region | quote }}
+
+  # API Gateway Configuration
+  api-gateway.json: |
+    {
+      "port": {{ .Values.api-gateway.ports.http | default 3000 }},
+      "grpcPort": {{ .Values.api-gateway.ports.grpc | default 5000 }},
+      "rateLimitRequests": {{ .Values.api-gateway.rateLimit.requests | default 1000 }},
+      "rateLimitWindow": {{ .Values.api-gateway.rateLimit.window | default "1m" | quote }},
+      "corsOrigins": {{ .Values.api-gateway.cors.origins | default "*" | quote }},
+      "logLevel": {{ .Values.api-gateway.logging.level | default "info" | quote }},
+      "timeoutMs": {{ .Values.api-gateway.timeout | default 5000 }}
+    }
+
+  # Asset Service Configuration
+  asset-service.json: |
+    {
+      "port": {{ .Values.asset-service.ports.http | default 8080 }},
+      "grpcPort": {{ .Values.asset-service.ports.grpc | default 5001 }},
+      "postgresHost": "{{ .Release.Name }}-postgresql",
+      "postgresPort": {{ .Values.postgresql.primary.service.ports.postgresql | default 5432 }},
+      "postgresDatabase": {{ .Values.postgresql.auth.database | default "rfid_assets" | quote }},
+      "cacheEnabled": {{ .Values.asset-service.cache.enabled | default true }},
+      "cacheTimeout": {{ .Values.asset-service.cache.timeout | default "5m" | quote }},
+      "maxConnections": {{ .Values.asset-service.maxConnections | default 100 }},
+      "connectionTimeout": {{ .Values.asset-service.connectionTimeout | default "30s" | quote }}
+    }
+
+  # Reader Service Configuration
+  reader-service.json: |
+    {
+      "port": {{ .Values.reader-service.ports.http | default 8081 }},
+      "grpcPort": {{ .Values.reader-service.ports.grpc | default 5002 }},
+      "influxdbHost": "{{ .Release.Name }}-influxdb",
+      "influxdbPort": {{ .Values.influxdb.port | default 8086 }},
+      "influxdbDatabase": {{ .Values.influxdb.database | default "rfid_reads" | quote }},
+      "readerTimeout": {{ .Values.reader-service.timeout | default "5s" | quote }},
+      "readInterval": {{ .Values.reader-service.readInterval | default 1000 }},
+      "filterDuplicates": {{ .Values.reader-service.filterDuplicates | default true }},
+      "maxReadsPerSecond": {{ .Values.reader-service.maxReadsPerSecond | default 1000 }},
+      "retryAttempts": {{ .Values.reader-service.retryAttempts | default 3 }}
+    }
+
+  # Visualization Service Configuration
+  visualization-service.json: |
+    {
+      "port": {{ .Values.visualization-service.ports.http | default 8082 }},
+      "websocketPort": {{ .Values.visualization-service.ports.websocket | default 8083 }},
+      "redisHost": "{{ .Release.Name }}-redis-master",
+      "redisPort": {{ .Values.redis.master.port | default 6379 }},
+      "updateInterval": {{ .Values.visualization-service.updateInterval | default 1000 }},
+      "maxConnections": {{ .Values.visualization-service.maxConnections | default 1000 }},
+      "heartbeatInterval": {{ .Values.visualization-service.heartbeatInterval | default "30s" | quote }},
+      "sessionTimeout": {{ .Values.visualization-service.sessionTimeout | default "1h" | quote }}
+    }
+
+  # Monitoring Configuration
+  monitoring.json: |
+    {
+      "metricsEnabled": {{ .Values.global.monitoring.enabled | default true }},
+      "metricsPort": {{ .Values.global.monitoring.port | default 9090 }},
+      "tracingEnabled": {{ .Values.global.monitoring.tracing.enabled | default true }},
+      "samplingRate": {{ .Values.global.monitoring.tracing.samplingRate | default 0.1 }}
+    }
