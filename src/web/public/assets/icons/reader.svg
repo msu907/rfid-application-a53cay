@@ -1,0 +1,26 @@
+<svg 
+  width="24" 
+  height="24" 
+  viewBox="0 0 24 24" 
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  role="img"
+  aria-label="RFID Reader Icon"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Base reader device body -->
+  <rect x="4" y="6" width="16" height="12" rx="2" />
+  
+  <!-- Antenna signal waves -->
+  <path d="M16 10C17.1 10 18 10.9 18 12C18 13.1 17.1 14 16 14" />
+  <path d="M16 8C18.2 8 20 9.8 20 12C20 14.2 18.2 16 16 16" />
+  
+  <!-- Reader status light -->
+  <circle cx="8" cy="12" r="2" />
+  
+  <!-- Connection port -->
+  <line x1="12" y1="18" x2="12" y2="20" />
+</svg>
