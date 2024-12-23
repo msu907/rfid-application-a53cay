@@ -1,0 +1,96 @@
+---
+# Ansible Development Environment Inventory
+# Version: 2.15
+# Purpose: Defines development infrastructure for RFID Asset Tracking System
+# ansible-core version: 2.15+
+
+# Global Variables
+all:
+  vars:
+    env: development
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_ssh_common_args: -o StrictHostKeyChecking=no
+
+# RFID Reader Infrastructure
+rfid_readers:
+  hosts:
+    reader-dev-01:
+      ansible_host: 192.168.1.101
+      ansible_user: rfid-admin
+      reader_id: RD-01
+      zone: Zone A-1
+      firmware_version: 2.1.0
+      monitoring_port: 9100
+      backup_enabled: true
+
+    reader-dev-02:
+      ansible_host: 192.168.1.102
+      ansible_user: rfid-admin
+      reader_id: RD-02
+      zone: Zone B-2
+      firmware_version: 2.1.0
+      monitoring_port: 9100
+      backup_enabled: true
+  
+  vars:
+    reader_protocol_version: "1.1"
+    read_rate: "1000"
+    frequency_band: "865-868"
+    power_level: "-20"
+    monitoring_enabled: true
+    read_filter_enabled: true
+    anti_collision_enabled: true
+    signal_strength_threshold: "-70"
+    heartbeat_interval: "30"
+    reader_network:
+      subnet: 192.168.1.0/24
+      gateway: 192.168.1.1
+      vlan_id: "100"
+      mtu: "1500"
+      dns_servers:
+        - 192.168.1.10
+        - 192.168.1.11
+
+# Monitoring Infrastructure
+monitoring_servers:
+  hosts:
+    prometheus-dev:
+      ansible_host: 192.168.2.101
+      ansible_user: monitor-admin
+      service: prometheus
+      port: 9090
+      retention_days: 30
+      scrape_interval: 15s
+
+    grafana-dev:
+      ansible_host: 192.168.2.102
+      ansible_user: monitor-admin
+      service: grafana
+      port: 3000
+      plugins_enabled: true
+
+    elasticsearch-dev:
+      ansible_host: 192.168.2.103
+      ansible_user: monitor-admin
+      service: elasticsearch
+      port: 9200
+      heap_size: 4g
+
+  vars:
+    prometheus_version: v2.45.0
+    grafana_version: 9.5.0
+    elasticsearch_version: 8.9.0
+    kibana_version: 8.9.0
+    jaeger_version: "1.47"
+    retention_period: 30d
+    data_directory: /var/lib/monitoring
+    backup_enabled: true
+    alert_manager_enabled: true
+    monitoring_network:
+      subnet: 192.168.2.0/24
+      gateway: 192.168.2.1
+      vlan_id: "200"
+      mtu: "1500"
+      dns_servers:
+        - 192.168.2.10
+        - 192.168.2.11
