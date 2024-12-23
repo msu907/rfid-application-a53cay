@@ -1,0 +1,83 @@
+[tool.poetry]
+name = "rfid-reader-service"
+version = "1.0.0"
+description = "High-performance RFID Reader Service for real-time asset tracking with sub-500ms latency"
+authors = ["RFID Asset Tracking Team"]
+python = "^3.11"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+# Web framework and server - v0.95.0 for stable API features
+fastapi = "^0.95.0"
+uvicorn = "^0.22.0"
+
+# Monitoring and metrics - v6.0.0 for Prometheus integration
+prometheus-fastapi-instrumentator = "^6.0.0"
+
+# Authentication and security - v3.3.0 for JWT handling
+python-jose = "^3.3.0"
+
+# Data validation and serialization - v1.10.0 for stable API
+pydantic = "^1.10.0"
+python-multipart = "^0.0.6"
+
+# RFID protocol handling - v1.0.0 for LLRP support
+sllurp = "^1.0.0"
+
+# Time-series database client - v1.36.0 for InfluxDB 2.x
+influxdb-client = "^1.36.0"
+
+# Async support and HTTP client - Latest stable versions
+asyncio = "^3.4.3"
+aiohttp = "^3.8.4"
+
+# Structured logging - v23.1.0 for production logging
+structlog = "^23.1.0"
+
+[tool.poetry.group.dev.dependencies]
+# Testing framework and plugins
+pytest = "^7.3.1"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.0.0"
+
+# Code formatting
+black = "^23.3.0"
+isort = "^5.12.0"
+
+# Linting and type checking
+flake8 = "^6.0.0"
+mypy = "^1.3.0"
+
+[build-system]
+requires = ["poetry-core>=1.5.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.build]
+generate-setup-file = false
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = "\.pyi?$"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 100
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = ["E203"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--cov=src --cov-report=term-missing --cov-fail-under=90"
