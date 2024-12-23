@@ -1,0 +1,237 @@
+// =============================================================================
+// Dashboard Page Styles
+// Version: 1.0.0
+// Description: Implements card-based layout, responsive grid system, and 
+// real-time status indicators for the RFID Asset Tracking System dashboard
+// =============================================================================
+
+@use '../base/variables' as *;
+@use '../components/card' as card;
+
+// Dashboard Layout Variables
+:root {
+  --dashboard-grid-columns: 12;
+  --dashboard-grid-gap: #{map-get($spacing, 'medium')};
+  --dashboard-map-height: 400px;
+  --dashboard-activities-height: 400px;
+  --scrollbar-width: 8px;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-track: rgba(0, 0, 0, 0.05);
+  --card-interactive-transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+// Responsive Dashboard Layout Mixin
+@mixin dashboard-responsive($breakpoint) {
+  @media (min-width: map-get($breakpoints, $breakpoint)) {
+    @content;
+  }
+}
+
+// Interactive Card States Mixin
+@mixin dashboard-card-interactive($elevation-level: 1) {
+  transition: var(--card-interactive-transition);
+  @include card.card-elevation('resting');
+
+  &:hover {
+    @include card.card-elevation('hover');
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid map-get($colors, 'primary', 'main');
+    outline-offset: map-get($spacing, 'small');
+  }
+}
+
+// Main Dashboard Container
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(var(--dashboard-grid-columns), 1fr);
+  gap: var(--dashboard-grid-gap);
+  padding: map-get($spacing, 'large');
+  max-width: map-get($breakpoints, 'wide');
+  margin: 0 auto;
+  box-sizing: border-box;
+
+  // Mobile-first responsive layout
+  @include dashboard-responsive('mobile') {
+    grid-template-columns: 1fr;
+    padding: map-get($spacing, 'medium');
+  }
+
+  @include dashboard-responsive('tablet') {
+    grid-template-columns: repeat(6, 1fr);
+    padding: map-get($spacing, 'large');
+  }
+
+  @include dashboard-responsive('desktop') {
+    grid-template-columns: repeat(12, 1fr);
+  }
+}
+
+// Quick Stats Section
+.dashboard__stats {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: map-get($spacing, 'medium');
+  margin-bottom: map-get($spacing, 'large');
+
+  @include dashboard-responsive('mobile') {
+    grid-template-columns: 1fr;
+  }
+
+  @include dashboard-responsive('tablet') {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include dashboard-responsive('desktop') {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  // Stats Card
+  &-card {
+    @extend .card;
+    @include dashboard-card-interactive;
+    padding: map-get($spacing, 'medium');
+    display: flex;
+    flex-direction: column;
+    gap: map-get($spacing, 'small');
+
+    &__title {
+      color: map-get($colors, 'text', 'secondary');
+      font-size: map-get(map-get($typography, 'font-sizes'), 'sm');
+      font-weight: map-get(map-get($typography, 'font-weights'), 'medium');
+    }
+
+    &__value {
+      color: map-get($colors, 'text', 'primary');
+      font-size: map-get(map-get($typography, 'font-sizes'), '2xl');
+      font-weight: map-get(map-get($typography, 'font-weights'), 'bold');
+    }
+  }
+}
+
+// Asset Location Map Section
+.dashboard__map {
+  grid-column: 1 / -1;
+  height: var(--dashboard-map-height);
+  border-radius: map-get($border-radius, 'medium');
+  overflow: hidden;
+  background-color: map-get($colors, 'background', 'paper');
+  @include dashboard-card-interactive(2);
+
+  @include dashboard-responsive('desktop') {
+    grid-column: span 8;
+  }
+}
+
+// Recent Activities Section
+.dashboard__activities {
+  grid-column: 1 / -1;
+  max-height: var(--dashboard-activities-height);
+  overflow-y: auto;
+  background-color: map-get($colors, 'background', 'paper');
+  border-radius: map-get($border-radius, 'medium');
+  @include dashboard-card-interactive(1);
+
+  @include dashboard-responsive('desktop') {
+    grid-column: span 4;
+  }
+
+  // Scrollbar Styling
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+
+  &::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: map-get($border-radius, 'small');
+  }
+}
+
+// Asset Quick View Table Section
+.dashboard__table {
+  grid-column: 1 / -1;
+  margin-top: map-get($spacing, 'large');
+  overflow-x: auto;
+  background-color: map-get($colors, 'background', 'paper');
+  border-radius: map-get($border-radius, 'medium');
+  @include dashboard-card-interactive(1);
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+
+    th, td {
+      padding: map-get($spacing, 'medium');
+      text-align: left;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    th {
+      font-weight: map-get(map-get($typography, 'font-weights'), 'medium');
+      color: map-get($colors, 'text', 'secondary');
+      background-color: map-get($colors, 'background', 'default');
+    }
+
+    td {
+      color: map-get($colors, 'text', 'primary');
+    }
+
+    tr {
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+      }
+    }
+  }
+}
+
+// Status Indicators
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: map-get($spacing, 'small');
+  padding: map-get($spacing, 'small') map-get($spacing, 'medium');
+  border-radius: map-get($border-radius, 'small');
+  font-size: map-get(map-get($typography, 'font-sizes'), 'sm');
+  font-weight: map-get(map-get($typography, 'font-weights'), 'medium');
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  &--active {
+    background-color: rgba(map-get($colors, 'secondary', 'main'), 0.1);
+    color: map-get($colors, 'secondary', 'main');
+    &::before {
+      background-color: map-get($colors, 'secondary', 'main');
+    }
+  }
+
+  &--warning {
+    background-color: rgba(255, 152, 0, 0.1);
+    color: #f57c00;
+    &::before {
+      background-color: #f57c00;
+    }
+  }
+
+  &--error {
+    background-color: rgba(map-get($colors, 'error', 'main'), 0.1);
+    color: map-get($colors, 'error', 'main');
+    &::before {
+      background-color: map-get($colors, 'error', 'main');
+    }
+  }
+}
