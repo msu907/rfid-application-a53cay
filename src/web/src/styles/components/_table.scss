@@ -1,0 +1,190 @@
+// =============================================================================
+// Table Component Styles
+// Version: 1.0.0
+// Description: Comprehensive table styling implementing Material Design principles
+// with responsive layouts, sortable headers, and status indicators
+// =============================================================================
+
+@import '../base/variables';
+
+// Function to determine status indicator colors
+@function get-status-color($status) {
+  $status-colors: (
+    'active': map-get(map-get($colors, 'secondary'), 'main'),
+    'inactive': map-get(map-get($colors, 'text'), 'disabled'),
+    'error': map-get(map-get($colors, 'error'), 'main'),
+    'warning': #f9a825, // Material Design yellow 800
+    'success': #2e7d32  // Material Design green 800
+  );
+  
+  @return map-get($status-colors, $status) or map-get(map-get($colors, 'text'), 'disabled');
+}
+
+// Responsive table mixin
+@mixin table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  
+  @media screen and (max-width: map-get($breakpoints, 'tablet')) {
+    margin: -(map-get($spacing, 'medium'));
+    width: calc(100% + #{2 * map-get($spacing, 'medium')});
+  }
+}
+
+// Sortable header mixin
+@mixin sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  
+  &::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: map-get($spacing, 'small');
+    vertical-align: middle;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid currentColor;
+    opacity: 0;
+    transition: opacity map-get(map-get($animation, 'duration'), 'short') 
+                map-get(map-get($animation, 'easing'), 'standard');
+  }
+  
+  &.sort-asc::after {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+  
+  &.sort-desc::after {
+    opacity: 1;
+    transform: rotate(180deg);
+  }
+  
+  &:hover::after {
+    opacity: 0.5;
+  }
+}
+
+// Base table styles
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: map-get(map-get($typography, 'font-family'), 'primary');
+  background-color: map-get(map-get($colors, 'background'), 'default');
+  box-shadow: map-get($shadows, 'low');
+  border-radius: map-get($border-radius, 'medium');
+  overflow: hidden;
+
+  // Table header
+  &-header {
+    background-color: map-get(map-get($colors, 'background'), 'paper');
+    color: map-get(map-get($colors, 'text'), 'primary');
+    font-weight: map-get(map-get($typography, 'font-weights'), 'medium');
+    position: sticky;
+    top: 0;
+    z-index: map-get($z-indices, 'sticky');
+
+    th {
+      padding: map-get($spacing, 'medium');
+      text-align: left;
+      border-bottom: 1px solid var(--table-border-color);
+      white-space: nowrap;
+      
+      &.sortable {
+        @include sortable-header;
+      }
+    }
+  }
+
+  // Table body
+  &-body {
+    tr {
+      transition: background-color map-get(map-get($animation, 'duration'), 'short') 
+                  map-get(map-get($animation, 'easing'), 'standard');
+      
+      &:hover {
+        background-color: var(--table-row-hover);
+      }
+    }
+
+    td {
+      padding: map-get($spacing, 'medium');
+      border-bottom: 1px solid var(--table-border-color);
+      color: map-get(map-get($colors, 'text'), 'primary');
+      
+      @media screen and (max-width: map-get($breakpoints, 'mobile')) {
+        padding: map-get($spacing, 'small');
+      }
+    }
+  }
+
+  // Status indicator
+  &-status {
+    display: inline-flex;
+    align-items: center;
+    gap: map-get($spacing, 'small');
+    border-radius: map-get($border-radius, 'large');
+    padding: map-get($spacing, 'small') map-get($spacing, 'base');
+    font-size: map-get(map-get($typography, 'font-sizes'), 'sm');
+    font-weight: map-get(map-get($typography, 'font-weights'), 'medium');
+    
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    @each $status in ('active', 'inactive', 'error', 'warning', 'success') {
+      &.status-#{$status} {
+        background-color: rgba(get-status-color($status), 0.1);
+        color: get-status-color($status);
+        
+        &::before {
+          background-color: get-status-color($status);
+        }
+      }
+    }
+  }
+
+  // Responsive styles
+  @media screen and (max-width: map-get($breakpoints, 'tablet')) {
+    &-responsive {
+      @include table-responsive;
+    }
+
+    &-cell {
+      &[data-label] {
+        display: flex;
+        padding: map-get($spacing, 'small');
+        
+        &::before {
+          content: attr(data-label);
+          flex: 1;
+          font-weight: map-get(map-get($typography, 'font-weights'), 'medium');
+          padding-right: map-get($spacing, 'medium');
+        }
+      }
+    }
+  }
+
+  // Action buttons column
+  &-actions {
+    white-space: nowrap;
+    text-align: right;
+    
+    button {
+      margin-left: map-get($spacing, 'small');
+    }
+  }
+}
+
+// Export table mixins for reuse
+:export {
+  table-responsive: table-responsive;
+  sortable-header: sortable-header;
+}
