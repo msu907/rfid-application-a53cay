@@ -1,0 +1,213 @@
+// =============================================================================
+// Card Component Styles
+// Version: 1.0.0
+// Description: Material Design card implementation with responsive behavior,
+// elevation system, and interactive states for the RFID Asset Tracking System
+// =============================================================================
+
+@use '../base/variables' as *;
+@use '../base/typography' as *;
+
+// Card Elevation System
+// Implements Material Design elevation with ambient and direct lighting effects
+$card-elevation-levels: (
+  'resting': (
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24)
+  ),
+  'hover': (
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.12)
+  ),
+  'active': (
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15),
+    0 3px 6px rgba(0, 0, 0, 0.10)
+  ),
+  'focused': (
+    box-shadow: 0 0 0 3px var(--focus-ring-color, #{map-get($colors, 'primary', 'light')})
+  ),
+  'disabled': (
+    box-shadow: none
+  )
+);
+
+// Card Interaction States
+$card-interaction-states: (
+  'hover': (
+    transform: scale(1.02),
+    transition-duration: map-get(map-get($animation, 'duration'), 'short')
+  ),
+  'active': (
+    transform: scale(0.98),
+    transition-duration: map-get(map-get($animation, 'duration'), 'short')
+  ),
+  'focus-visible': (
+    outline-offset: spacing('small'),
+    outline-width: 2px
+  )
+);
+
+// Card Elevation Mixin
+@mixin card-elevation($level: 'resting') {
+  @if map-has-key($card-elevation-levels, $level) {
+    box-shadow: map-get($card-elevation-levels, $level);
+    transition: box-shadow map-get(map-get($animation, 'duration'), 'medium') 
+                map-get(map-get($animation, 'easing'), 'standard');
+  }
+}
+
+// Card Responsive Behavior
+@mixin card-responsive($breakpoint) {
+  @media (min-width: map-get($breakpoints, $breakpoint)) {
+    @content;
+  }
+}
+
+// Base Card Component
+.card {
+  background-color: map-get($colors, 'background', 'paper');
+  border-radius: map-get($border-radius, 'medium');
+  padding: spacing('medium');
+  margin-bottom: spacing('medium');
+  position: relative;
+  outline: 0;
+  cursor: pointer;
+  will-change: transform, box-shadow;
+  
+  // Apply resting elevation
+  @include card-elevation('resting');
+  
+  // Transition properties
+  transition: all map-get(map-get($animation, 'duration'), 'medium')
+              map-get(map-get($animation, 'easing'), 'standard');
+
+  // Hover state
+  &:hover:not(:disabled) {
+    @include card-elevation('hover');
+    transform: map-get(map-get($card-interaction-states, 'hover'), 'transform');
+    background-color: darken(map-get($colors, 'background', 'paper'), 2%);
+  }
+
+  // Active state
+  &:active:not(:disabled) {
+    @include card-elevation('active');
+    transform: map-get(map-get($card-interaction-states, 'active'), 'transform');
+  }
+
+  // Focus visible state for keyboard navigation
+  &:focus-visible {
+    @include card-elevation('focused');
+    outline: 2px solid map-get($colors, 'primary', 'main');
+    outline-offset: map-get(map-get($card-interaction-states, 'focus-visible'), 'outline-offset');
+  }
+
+  // Disabled state
+  &:disabled {
+    @include card-elevation('disabled');
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// Asset Card Variant
+.card--asset {
+  display: grid;
+  gap: spacing('medium');
+
+  // Mobile-first responsive layout
+  grid-template-columns: 1fr;
+  
+  @include card-responsive('tablet') {
+    grid-template-columns: minmax(80px, auto) 1fr;
+    align-items: start;
+  }
+
+  // Asset image container
+  &__image {
+    aspect-ratio: 1;
+    background-color: map-get($colors, 'background', 'default');
+    border-radius: map-get($border-radius, 'small');
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  // Asset content container
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: spacing('base');
+
+    h3 {
+      @extend .typography-styles;
+      margin-bottom: spacing('small');
+      color: map-get($colors, 'text', 'primary');
+    }
+
+    p {
+      color: map-get($colors, 'text', 'secondary');
+      margin-bottom: spacing('small');
+    }
+  }
+
+  // Asset metadata
+  &__metadata {
+    display: grid;
+    gap: spacing('small');
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    
+    span {
+      font-size: map-get(map-get($typography, 'font-sizes'), 'sm');
+      color: map-get($colors, 'text', 'secondary');
+    }
+  }
+
+  // Asset actions
+  &__actions {
+    display: flex;
+    gap: spacing('base');
+    margin-top: spacing('medium');
+    justify-content: flex-end;
+
+    @include card-responsive('mobile') {
+      flex-direction: column;
+    }
+
+    @include card-responsive('tablet') {
+      flex-direction: row;
+    }
+  }
+}
+
+// High-density layout variant
+.card--dense {
+  padding: spacing('base');
+  gap: spacing('base');
+
+  .card--asset__content {
+    gap: spacing('small');
+  }
+
+  .card--asset__metadata {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+}
+
+// Interactive card variant
+.card--interactive {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
