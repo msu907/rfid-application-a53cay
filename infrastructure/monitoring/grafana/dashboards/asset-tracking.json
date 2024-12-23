@@ -1,0 +1,310 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "rfid-asset-tracking",
+    "title": "RFID Asset Tracking Dashboard",
+    "tags": ["rfid", "assets", "tracking", "monitoring"],
+    "timezone": "browser",
+    "refresh": "10s",
+    "schemaVersion": 36,
+    "version": 1,
+    "panels": [
+      {
+        "title": "Asset Location Distribution",
+        "type": "piechart",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum by (location) (asset_current_location_count)",
+            "legendFormat": "{{location}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          },
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "title": "Read Processing Latency",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(rfid_read_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration",
+            "logBase": 1,
+            "min": 0,
+            "max": 1
+          },
+          {
+            "format": "short",
+            "label": "",
+            "logBase": 1
+          }
+        ],
+        "thresholds": [
+          {
+            "colorMode": "critical",
+            "fill": true,
+            "line": true,
+            "op": "gt",
+            "value": 0.5,
+            "yaxis": "left"
+          }
+        ]
+      },
+      {
+        "title": "Asset Movement Heatmap",
+        "type": "heatmap",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        },
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum by (source_location, destination_location) (rate(asset_movement_total[1h]))",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "calculate": true,
+          "calculation": {
+            "xBuckets": {
+              "mode": "size",
+              "value": "1h"
+            }
+          },
+          "color": {
+            "mode": "scheme",
+            "scheme": "RdYlBu"
+          },
+          "yAxis": {
+            "format": "short",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "title": "Asset Tracking Accuracy",
+        "type": "gauge",
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 16
+        },
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "avg(asset_tracking_accuracy_percentage)",
+            "legendFormat": "Accuracy %",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 90, "color": "yellow" },
+              { "value": 95, "color": "green" }
+            ]
+          },
+          "minValue": 0,
+          "maxValue": 100,
+          "unit": "percent"
+        }
+      },
+      {
+        "title": "Lost Asset Incidents",
+        "type": "timeseries",
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 16
+        },
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(increase(lost_asset_incidents_total[24h]))",
+            "legendFormat": "Daily Lost Assets",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        }
+      },
+      {
+        "title": "System Uptime",
+        "type": "stat",
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 16
+        },
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "avg_over_time(up{job=\"rfid-system\"}[24h]) * 100",
+            "legendFormat": "Uptime %",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 99, "color": "yellow" },
+                { "value": 99.9, "color": "green" }
+              ]
+            },
+            "unit": "percent",
+            "decimals": 2
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "location",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(asset_current_location_count, location)",
+          "refresh": "time",
+          "sort": 1,
+          "multi": true
+        },
+        {
+          "name": "reader_id",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(rfid_reader_status, reader_id)",
+          "refresh": "time",
+          "sort": 1
+        },
+        {
+          "name": "zone",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(asset_current_location_count, zone)",
+          "refresh": "time",
+          "sort": 1,
+          "multi": true
+        },
+        {
+          "name": "timeRange",
+          "type": "interval",
+          "query": "5m,1h,6h,12h,24h",
+          "auto": false,
+          "auto_count": 30,
+          "auto_min": "10s",
+          "refresh": 2,
+          "options": [
+            { "selected": false, "text": "5m", "value": "5m" },
+            { "selected": true, "text": "1h", "value": "1h" },
+            { "selected": false, "text": "6h", "value": "6h" },
+            { "selected": false, "text": "12h", "value": "12h" },
+            { "selected": false, "text": "24h", "value": "24h" }
+          ]
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Maintenance",
+          "datasource": "Prometheus",
+          "expr": "changes(maintenance_window_active[1m]) > 0",
+          "iconColor": "yellow",
+          "enable": true,
+          "tags": ["maintenance"],
+          "titleFormat": "Maintenance Window",
+          "textFormat": "System maintenance started"
+        }
+      ]
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": [
+        "5s",
+        "10s",
+        "30s",
+        "1m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "1d"
+      ]
+    }
+  }
+}
