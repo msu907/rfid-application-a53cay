@@ -1,0 +1,103 @@
+# Production overlay for RFID Asset Tracking System
+# Version: v5.0.0
+# Purpose: Production-specific Kubernetes configuration with enhanced security, 
+# high availability, and resource management settings
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Extend base configuration
+bases:
+  - ../../base
+
+# Production namespace
+namespace: rfid-system-prod
+
+# Production-specific labels
+commonLabels:
+  environment: production
+  app.kubernetes.io/environment: prod
+  app.kubernetes.io/part-of: rfid-asset-tracking
+  app.kubernetes.io/managed-by: kustomize
+
+# Additional production resources
+resources:
+  - resources/ingress.yaml
+  - resources/hpa.yaml
+  - resources/networkpolicy.yaml
+  - resources/poddisruptionbudget.yaml
+  - resources/monitoring.yaml
+  - resources/serviceaccount.yaml
+
+# Production-specific patches
+patches:
+  # Increase replica count for high availability
+  - path: patches/increase-replicas.yaml
+    target:
+      kind: Deployment
+      name: ".*"
+  
+  # Add pod anti-affinity for better distribution
+  - path: patches/add-pod-antiaffinity.yaml
+    target:
+      kind: Deployment
+      name: ".*"
+  
+  # Set production resource limits
+  - path: patches/resource-limits.yaml
+    target:
+      kind: Deployment
+      name: ".*"
+  
+  # Enhanced security context
+  - path: patches/security-context.yaml
+    target:
+      kind: Deployment
+      name: ".*"
+
+# Production ConfigMap settings
+configMapGenerator:
+  - name: rfid-config-prod
+    behavior: merge
+    literals:
+      - API_VERSION=v1
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      - GRPC_PORT=5000
+      - HTTP_PORT=3000
+      - ENABLE_MONITORING=true
+      - ENABLE_TRACING=true
+      - MAX_CONNECTIONS=1000
+      - READER_TIMEOUT=5000
+      - CACHE_TTL=3600
+
+# Production secrets configuration
+secretGenerator:
+  - name: rfid-secrets-prod
+    type: Opaque
+    behavior: merge
+    files:
+      - secrets/jwt-secret.txt
+      - secrets/db-credentials.txt
+      - secrets/tls-cert.pem
+      - secrets/tls-key.pem
+      - secrets/api-keys.txt
+      - secrets/encryption-key.txt
+
+# Production image configuration
+images:
+  - name: api-gateway
+    newName: rfid-asset-tracking/api-gateway
+    newTag: stable
+  
+  - name: asset-service
+    newName: rfid-asset-tracking/asset-service
+    newTag: stable
+  
+  - name: reader-service
+    newName: rfid-asset-tracking/reader-service
+    newTag: stable
+  
+  - name: visualization-service
+    newName: rfid-asset-tracking/visualization-service
+    newTag: stable
