@@ -1,0 +1,134 @@
+# Prometheus Server Configuration Template
+# Version: 2.45.0
+# Purpose: Configure Prometheus monitoring for RFID Asset Tracking System
+
+# Global configuration with dynamic intervals and labels
+global:
+  scrape_interval: {{ prometheus_scrape_interval | default('15s') }}
+  evaluation_interval: {{ prometheus_evaluation_interval | default('15s') }}
+  external_labels:
+    monitor: {{ prometheus_external_label | default('rfid-asset-tracking') }}
+    environment: {{ environment | default('production') }}
+
+# Alertmanager configuration with high availability
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - "{{ alertmanager_host }}:{{ alertmanager_port | default('9093') }}"
+      scheme: {{ alertmanager_scheme | default('http') }}
+      timeout: {{ alertmanager_timeout | default('10s') }}
+
+# Import alert rules for monitoring system metrics
+rule_files:
+  - "{{ prometheus_rules_dir | default('/etc/prometheus/rules') }}/*.yml"
+
+# Scrape configurations for all system components
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ["localhost:{{ prometheus_port | default('9090') }}"]
+    metrics_path: '/metrics'
+    scheme: 'http'
+
+  # API Gateway monitoring with custom metrics filtering
+  - job_name: 'api-gateway'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ["{{ k8s_namespace | default('rfid-system') }}"]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: 'api-gateway'
+        action: 'keep'
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        action: 'keep'
+        regex: '9091'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'process_.*|go_.*'
+        action: 'drop'
+
+  # Asset Service monitoring with Spring Boot Actuator
+  - job_name: 'asset-service'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ["{{ k8s_namespace | default('rfid-system') }}"]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: 'asset-service'
+        action: 'keep'
+    metrics_path: '/actuator/prometheus'
+    scheme: 'http'
+
+  # Reader Service monitoring with higher frequency
+  - job_name: 'reader-service'
+    scrape_interval: {{ reader_scrape_interval | default('5s') }}
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ["{{ k8s_namespace | default('rfid-system') }}"]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: 'reader-service'
+        action: 'keep'
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: 'replace'
+        target_label: __metrics_path__
+        regex: '(.+)'
+
+  # Visualization Service monitoring
+  - job_name: 'visualization-service'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ["{{ k8s_namespace | default('rfid-system') }}"]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: 'visualization-service'
+        action: 'keep'
+
+  # Node Exporter for hardware-level metrics
+  - job_name: 'node-exporter'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: 'https'
+    tls_config:
+      insecure_skip_verify: true
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_node_label_kubernetes_io_hostname]
+        target_label: instance
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+
+  # cAdvisor for container metrics
+  - job_name: 'cadvisor'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: ["{{ k8s_namespace | default('rfid-system') }}"]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: 'cadvisor'
+        action: 'keep'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'container_.*'
+        action: 'keep'
+
+  # Kubernetes API server monitoring
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names: ['default']
+    scheme: 'https'
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        regex: 'kubernetes'
+        action: 'keep'
