@@ -1,0 +1,47 @@
+apiVersion: v2
+name: rfid-asset-tracking
+description: Production-ready Helm chart for RFID Asset Tracking and Visualization System with comprehensive dependency management
+type: application
+version: 1.0.0
+appVersion: 1.0.0
+
+dependencies:
+  # PostgreSQL database for asset data storage
+  # version: 12.5.3
+  - name: postgresql
+    version: 12.5.3
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+    tags:
+      - database
+      - persistence
+
+  # Redis cache for high-performance application caching
+  # version: 17.11.3
+  - name: redis
+    version: 17.11.3
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+    tags:
+      - cache
+      - performance
+
+  # InfluxDB for time-series RFID read data storage
+  # version: 5.4.13
+  - name: influxdb
+    version: 5.4.13
+    repository: https://charts.bitnami.com/bitnami
+    condition: influxdb.enabled
+    tags:
+      - timeseries
+      - persistence
+
+  # MinIO for scalable object storage of asset images
+  # version: 12.6.5
+  - name: minio
+    version: 12.6.5
+    repository: https://charts.bitnami.com/bitnami
+    condition: minio.enabled
+    tags:
+      - storage
+      - persistence
