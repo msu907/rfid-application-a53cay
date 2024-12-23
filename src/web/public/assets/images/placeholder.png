@@ -1,0 +1,33 @@
+Format: PNG-8 with transparency
+Dimensions: 300x300 pixels
+Resolution: 72 DPI
+Aspect ratio: 1:1
+Colors: 
+- Primary: #E5E7EB
+- Secondary: #9CA3AF
+- Border: #D1D5DB
+
+The image should be generated with the following characteristics:
+1. Transparent background with subtle grid pattern
+2. Centered generic asset icon taking up 50% of container (150x150px)
+3. Minimalist and professional style
+4. Optimized using pngcrush for file size < 10KB
+
+Generation Command Example:
+1. Create base image:
+   convert -size 300x300 xc:none \
+   -fill '#E5E7EB' \
+   -draw "rectangle 0,0 300,300" \
+   -fill '#9CA3AF' \
+   -draw "image Over 75,75 150,150 'asset-icon.svg'" \
+   -draw "path 'M 0,30 L 300,30 M 0,60 L 300,60 M 30,0 L 30,300 M 60,0 L 60,300'" \
+   placeholder_temp.png
+
+2. Optimize with pngcrush:
+   pngcrush -rem alla -reduce -brute placeholder_temp.png placeholder.png
+
+The resulting image will be served with the following headers:
+Cache-Control: public, max-age=31536000, immutable
+Content-Type: image/png
+
+Note: This is a static asset that should be version controlled and deployed with the web application. The actual binary content should be generated using the specifications above.
