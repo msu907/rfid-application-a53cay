@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Real-time asset tracking and visualization system using RFID technology" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.rfidtracking.com;" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
+
+    <!-- PWA and Favicon -->
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Font Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Typography and Icons -->
+    <link 
+      rel="stylesheet" 
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+    />
+    <link 
+      rel="stylesheet" 
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+
+    <!-- Performance Optimizations -->
+    <link rel="preload" href="/src/index.tsx" as="script" type="module" />
+    <link rel="preload" href="/critical.css" as="style" />
+
+    <title>RFID Asset Tracking System</title>
+
+    <!-- Browser Compatibility Check -->
+    <script>
+      // Check minimum browser versions
+      const minVersions = {
+        chrome: 90,
+        firefox: 88,
+        safari: 14,
+        edge: 90
+      };
+
+      function checkBrowserCompatibility() {
+        const ua = navigator.userAgent.toLowerCase();
+        let isCompatible = true;
+
+        if (/chrome/.test(ua)) {
+          const version = parseInt(ua.match(/chrome\/(\d+)/)[1]);
+          isCompatible = version >= minVersions.chrome;
+        } else if (/firefox/.test(ua)) {
+          const version = parseInt(ua.match(/firefox\/(\d+)/)[1]);
+          isCompatible = version >= minVersions.firefox;
+        } else if (/safari/.test(ua) && !/chrome/.test(ua)) {
+          const version = parseInt(ua.match(/version\/(\d+)/)[1]);
+          isCompatible = version >= minVersions.safari;
+        } else if (/edge/.test(ua)) {
+          const version = parseInt(ua.match(/edge\/(\d+)/)[1]);
+          isCompatible = version >= minVersions.edge;
+        }
+
+        if (!isCompatible) {
+          document.getElementById('browser-warning').style.display = 'block';
+        }
+      }
+
+      window.addEventListener('load', checkBrowserCompatibility);
+    </script>
+  </head>
+  <body>
+    <!-- Browser Warning -->
+    <div 
+      id="browser-warning" 
+      style="display: none; background: #fff3cd; color: #856404; padding: 1rem; text-align: center; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;"
+    >
+      Your browser version is not supported. Please upgrade to a newer version for the best experience.
+    </div>
+
+    <!-- Application Root -->
+    <div id="root" role="main"></div>
+
+    <!-- NoScript Warning -->
+    <noscript>
+      <div style="background: #f8d7da; color: #721c24; padding: 1rem; text-align: center;">
+        You need to enable JavaScript to run this app.
+      </div>
+    </noscript>
+
+    <!-- Loading Indicator -->
+    <div 
+      id="loading-indicator" 
+      aria-label="Loading application" 
+      style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);"
+    >
+      <div class="loading-spinner"></div>
+      <p>Loading application...</p>
+    </div>
+
+    <!-- Application Entry Point -->
+    <script type="module" src="/src/index.tsx"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js', {
+            scope: '/'
+          }).then(registration => {
+            console.log('ServiceWorker registration successful');
+          }).catch(error => {
+            console.error('ServiceWorker registration failed:', error);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
