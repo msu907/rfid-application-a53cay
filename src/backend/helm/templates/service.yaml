@@ -1,0 +1,136 @@
+{{/* API Gateway Service */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: rfid-tracking-system
+  annotations:
+    {{- with .Values.global.monitoring }}
+    prometheus.io/scrape: "{{ .enabled }}"
+    prometheus.io/port: "{{ .prometheusAnnotations.prometheus.io/port }}"
+    {{- end }}
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout: "15"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: {{ .Values.api-gateway.ports.http }}
+      targetPort: http
+      protocol: TCP
+    - name: grpc
+      port: {{ .Values.api-gateway.ports.grpc }}
+      targetPort: grpc
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+
+---
+{{/* Asset Service */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-asset-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: asset-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: rfid-tracking-system
+  annotations:
+    {{- with .Values.global.monitoring }}
+    prometheus.io/scrape: "{{ .enabled }}"
+    prometheus.io/port: "{{ .prometheusAnnotations.prometheus.io/port }}"
+    {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.asset-service.ports.http }}
+      targetPort: http
+      protocol: TCP
+    - name: grpc
+      port: {{ .Values.asset-service.ports.grpc }}
+      targetPort: grpc
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: asset-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+
+---
+{{/* Reader Service */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-reader-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: reader-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: rfid-tracking-system
+  annotations:
+    {{- with .Values.global.monitoring }}
+    prometheus.io/scrape: "{{ .enabled }}"
+    prometheus.io/port: "{{ .prometheusAnnotations.prometheus.io/port }}"
+    {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.reader-service.ports.http }}
+      targetPort: http
+      protocol: TCP
+    - name: llrp
+      port: {{ .Values.reader-service.ports.llrp }}
+      targetPort: llrp
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: reader-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+
+---
+{{/* Visualization Service */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-visualization-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: visualization-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: rfid-tracking-system
+  annotations:
+    {{- with .Values.global.monitoring }}
+    prometheus.io/scrape: "{{ .enabled }}"
+    prometheus.io/port: "{{ .prometheusAnnotations.prometheus.io/port }}"
+    {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.visualization-service.ports.http }}
+      targetPort: http
+      protocol: TCP
+    - name: ws
+      port: {{ .Values.visualization-service.ports.ws }}
+      targetPort: ws
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: visualization-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
