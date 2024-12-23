@@ -1,0 +1,189 @@
+// =============================================================================
+// Layout Component Styles
+// Version: 1.0.0
+// Description: Core layout styles implementing responsive design patterns and 
+// grid system for the RFID Asset Tracking application
+// =============================================================================
+
+@import '../base/variables';
+
+// =============================================================================
+// Global Box Sizing Reset
+// =============================================================================
+
+html {
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+// =============================================================================
+// Layout Mixins
+// =============================================================================
+
+@mixin responsive-breakpoint($breakpoint) {
+  @if map-has-key($breakpoints, $breakpoint) {
+    @media (min-width: map-get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  } @else {
+    @error "Unknown breakpoint: #{$breakpoint}. Available breakpoints: #{map-keys($breakpoints)}";
+  }
+}
+
+// =============================================================================
+// Core Layout Classes
+// =============================================================================
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--background-color, map-get($colors, 'background', 'default'));
+
+  // Navbar Component
+  &__navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: map-get($spacing, 'xlarge') * 2; // 64px
+    z-index: map-get($z-indices, 'sticky');
+    background-color: var(--navbar-bg, map-get($colors, 'background', 'paper'));
+    box-shadow: map-get($shadows, 'medium');
+    transition: box-shadow map-get($animation, 'duration', 'medium') 
+                map-get($animation, 'easing', 'standard');
+    padding: 0 map-get($spacing, 'medium');
+    display: flex;
+    align-items: center;
+  }
+
+  // Sidebar Component
+  &__sidebar {
+    position: fixed;
+    left: 0;
+    top: map-get($spacing, 'xlarge') * 2; // 64px from navbar
+    height: calc(100vh - #{map-get($spacing, 'xlarge') * 2});
+    width: 240px;
+    z-index: map-get($z-indices, 'sticky') - 1;
+    background-color: var(--sidebar-bg, map-get($colors, 'background', 'paper'));
+    border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+    transition: transform map-get($animation, 'duration', 'medium') 
+                map-get($animation, 'easing', 'standard'),
+                width map-get($animation, 'duration', 'medium') 
+                map-get($animation, 'easing', 'standard');
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: map-get($border-radius, 'small');
+    }
+  }
+
+  // Main Content Area
+  &__content {
+    flex: 1 1 auto;
+    margin-top: map-get($spacing, 'xlarge') * 2; // 64px from navbar
+    margin-left: 240px; // Default sidebar width
+    padding: map-get($spacing, 'large');
+    transition: margin-left map-get($animation, 'duration', 'medium') 
+                map-get($animation, 'easing', 'standard');
+    min-height: calc(100vh - #{map-get($spacing, 'xlarge') * 2});
+    width: 100%;
+    max-width: map-get($breakpoints, 'wide');
+    margin-right: auto;
+    position: relative;
+  }
+}
+
+// =============================================================================
+// Responsive Breakpoints
+// =============================================================================
+
+// Mobile Layout
+@media (max-width: map-get($breakpoints, 'tablet')) {
+  .layout {
+    &__sidebar {
+      transform: translateX(-100%);
+      width: 100%;
+      
+      &--open {
+        transform: translateX(0);
+      }
+    }
+    
+    &__content {
+      margin-left: 0;
+      padding: map-get($spacing, 'medium');
+    }
+  }
+}
+
+// Tablet Layout
+@media (min-width: map-get($breakpoints, 'tablet')) and 
+       (max-width: map-get($breakpoints, 'desktop')) {
+  .layout {
+    &__sidebar {
+      width: 200px;
+    }
+    
+    &__content {
+      margin-left: 200px;
+    }
+  }
+}
+
+// Desktop Layout
+@media (min-width: map-get($breakpoints, 'desktop')) {
+  .layout {
+    &__content {
+      padding: map-get($spacing, 'xlarge');
+    }
+  }
+}
+
+// Wide Desktop Layout
+@media (min-width: map-get($breakpoints, 'wide')) {
+  .layout {
+    &__content {
+      padding: map-get($spacing, 'xlarge') map-get($spacing, 'xlarge') * 1.5;
+    }
+  }
+}
+
+// =============================================================================
+// Print Styles
+// =============================================================================
+
+@media print {
+  .layout {
+    &__navbar,
+    &__sidebar {
+      display: none;
+    }
+    
+    &__content {
+      margin: 0;
+      padding: 0;
+    }
+  }
+}
