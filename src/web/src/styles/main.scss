@@ -1,0 +1,185 @@
+// =============================================================================
+// RFID Asset Tracking System - Main Stylesheet
+// Version: 1.0.0
+// Description: Main SCSS entry point implementing Material Design components,
+// responsive layouts, and accessibility standards
+// =============================================================================
+
+// Import base styles and configurations
+@use 'base/reset';
+@use 'base/variables' as *;
+@use 'base/typography' as *;
+
+// =============================================================================
+// Critical Styles
+// =============================================================================
+
+// Base HTML & Body Setup
+html {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  font-size: map-get(map-get($typography, 'font-sizes'), 'base');
+  
+  @media (prefers-reduced-motion: reduce) {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  font-family: map-get(map-get($typography, 'font-family'), 'primary');
+  font-size: map-get(map-get($typography, 'font-sizes'), 'base');
+  line-height: map-get(map-get($typography, 'line-heights'), 'base');
+  color: map-get(map-get($colors, 'text'), 'primary');
+  background-color: map-get(map-get($colors, 'background'), 'default');
+}
+
+// =============================================================================
+// Grid System
+// =============================================================================
+
+.container {
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: var(--container-padding);
+  padding-left: var(--container-padding);
+  
+  @media (min-width: map-get($breakpoints, 'mobile')) {
+    --container-padding: #{$container-padding-mobile};
+    max-width: map-get($breakpoints, 'mobile');
+  }
+  
+  @media (min-width: map-get($breakpoints, 'tablet')) {
+    --container-padding: #{$container-padding-tablet};
+    max-width: map-get($breakpoints, 'tablet');
+  }
+  
+  @media (min-width: map-get($breakpoints, 'desktop')) {
+    --container-padding: #{$container-padding-desktop};
+    max-width: map-get($breakpoints, 'desktop');
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat($grid-columns, 1fr);
+  gap: $grid-gap;
+}
+
+// =============================================================================
+// Focus Management
+// =============================================================================
+
+:focus-visible {
+  outline: $focus-ring-width $focus-ring-style $focus-ring-color;
+  outline-offset: $focus-ring-offset;
+}
+
+// =============================================================================
+// Error States
+// =============================================================================
+
+.error {
+  border-color: map-get($error-states, 'border-color');
+  background-color: map-get($error-states, 'background');
+  color: map-get($error-states, 'text-color');
+}
+
+// =============================================================================
+// Utility Classes
+// =============================================================================
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// =============================================================================
+// Animation & Transitions
+// =============================================================================
+
+.transition-standard {
+  transition-duration: $transition-duration;
+  transition-timing-function: map-get(map-get($animation, 'easing'), 'standard');
+}
+
+// =============================================================================
+// RFID-Specific Components
+// =============================================================================
+
+.rfid-tag {
+  font-family: map-get(map-get($typography, 'font-family'), 'monospace');
+  padding: spacing('small') spacing('base');
+  border-radius: map-get($border-radius, 'small');
+  background-color: map-get(map-get($colors, 'background'), 'paper');
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: map-get($border-radius, 'round');
+  
+  &--active {
+    background-color: map-get(map-get($colors, 'secondary'), 'main');
+  }
+  
+  &--inactive {
+    background-color: map-get(map-get($colors, 'error'), 'main');
+  }
+}
+
+// =============================================================================
+// Responsive Mixins
+// =============================================================================
+
+@mixin responsive-breakpoint($breakpoint) {
+  @if map-has-key($breakpoints, $breakpoint) {
+    @media (min-width: map-get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  } @else {
+    @error "Unknown breakpoint: #{$breakpoint}";
+  }
+}
+
+// =============================================================================
+// Critical CSS Extraction
+// =============================================================================
+
+@function get-critical-styles($component) {
+  $critical-selectors: (
+    'container',
+    'grid',
+    'typography-styles',
+    'status-indicator'
+  );
+  
+  @if index($critical-selectors, $component) {
+    @return true;
+  }
+  @return false;
+}
+
+// =============================================================================
+// Exports
+// =============================================================================
+
+:export {
+  base-styles: true;
+  utility-classes: true;
+  rfid-components: true;
+}
