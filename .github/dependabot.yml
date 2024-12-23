@@ -1,0 +1,143 @@
+# Dependabot configuration file for automated dependency updates
+# Version: 2
+# Manages dependencies for Node.js, Java, Python, Docker, and Terraform components
+
+version: 2
+updates:
+  # API Gateway (Node.js) dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/backend/api-gateway"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "api-gateway"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "security-team"
+    open-pull-requests-limit: 10
+
+  # Visualization Service (Node.js) dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/backend/visualization-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "visualization"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "visualization-team"
+    open-pull-requests-limit: 10
+
+  # Asset Service (Java/Maven) dependencies
+  - package-ecosystem: "maven"
+    directory: "/src/backend/asset-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "java"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "java-team"
+    open-pull-requests-limit: 10
+
+  # Reader Service (Python) dependencies
+  - package-ecosystem: "pip"
+    directory: "/src/backend/reader-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "python"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "reader-team"
+    open-pull-requests-limit: 10
+
+  # Web Frontend (Node.js) dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "frontend-team"
+    open-pull-requests-limit: 10
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/src/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "devops-team"
+    open-pull-requests-limit: 5
+
+  # Infrastructure (Terraform) dependencies
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/terraform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "infrastructure"
+      - "terraform"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    reviewers:
+      - "infrastructure-team"
+    open-pull-requests-limit: 5
