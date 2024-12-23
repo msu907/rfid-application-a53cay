@@ -1,0 +1,98 @@
+# Logstash Core Configuration
+# Version: 7.17.0
+# Purpose: Core configuration for Logstash instance in RFID Asset Tracking System
+
+#------------------------------------------------------------------------------
+# Node Settings
+#------------------------------------------------------------------------------
+# Basic node configuration for unique instance identification and paths
+node.name: ${HOSTNAME}
+path.data: /var/lib/logstash
+path.logs: /var/log/logstash
+path.config: /etc/logstash/conf.d
+
+#------------------------------------------------------------------------------
+# Pipeline Settings
+#------------------------------------------------------------------------------
+# Optimized pipeline configuration for RFID event processing
+pipeline.id: main
+pipeline.workers: 4                # Number of pipeline workers for parallel processing
+pipeline.batch.size: 2000         # Batch size optimized for RFID read volumes
+pipeline.batch.delay: 50          # Minimal delay for real-time processing
+pipeline.ordered: true            # Maintain event ordering for accurate tracking
+pipeline.unsafe_shutdown: false    # Ensure data integrity during shutdown
+
+#------------------------------------------------------------------------------
+# Queue Settings
+#------------------------------------------------------------------------------
+# Persistent queue configuration for reliable event handling
+queue.type: persisted            # Persistent queue for data durability
+queue.max_bytes: 1gb             # Maximum queue size for high-volume processing
+queue.checkpoint.writes: 1000    # Checkpoint frequency for data safety
+queue.checkpoint.retries: 3      # Retry attempts for checkpoint operations
+queue.drain: true               # Ensure queue processing completion on shutdown
+
+#------------------------------------------------------------------------------
+# Monitoring Settings (X-Pack)
+#------------------------------------------------------------------------------
+# X-Pack monitoring configuration for system observability
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.hosts: ["http://elasticsearch:9200"]
+xpack.monitoring.collection.interval: 10s
+monitoring.elasticsearch.username: ${ELASTIC_USERNAME}
+monitoring.elasticsearch.password: ${ELASTIC_PASSWORD}
+
+#------------------------------------------------------------------------------
+# Security Settings
+#------------------------------------------------------------------------------
+# Enhanced security configuration with SSL/TLS
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.security.transport.ssl.keystore.path: ${LOGSTASH_KEYSTORE_PATH}
+xpack.security.transport.ssl.truststore.path: ${LOGSTASH_TRUSTSTORE_PATH}
+
+#------------------------------------------------------------------------------
+# Performance Tuning
+#------------------------------------------------------------------------------
+# Performance optimization settings for RFID data processing
+config.reload.automatic: true
+config.reload.interval: 3s
+http.host: "0.0.0.0"             # Enable remote monitoring
+http.port: 9600                  # Default monitoring API port
+log.level: info                  # Production logging level
+
+#------------------------------------------------------------------------------
+# Memory Management
+#------------------------------------------------------------------------------
+# JVM and memory settings for optimal performance
+pipeline.java_execution: true
+pipeline.plugin_classloaders: false
+queue.page_capacity: 64mb        # Memory page size for queue storage
+queue.max_events: 0             # No limit on queued events
+
+#------------------------------------------------------------------------------
+# Dead Letter Queue
+#------------------------------------------------------------------------------
+# Configuration for handling failed events
+dead_letter_queue.enable: true
+dead_letter_queue.max_bytes: 1gb
+dead_letter_queue.flush_interval: 5000
+
+#------------------------------------------------------------------------------
+# API Settings
+#------------------------------------------------------------------------------
+# API configuration for monitoring and management
+api.enabled: true
+api.http.host: "0.0.0.0"
+api.http.port: 9600
+api.environment: production
+
+#------------------------------------------------------------------------------
+# Logging Settings
+#------------------------------------------------------------------------------
+# Production logging configuration
+log.format: json                # JSON format for machine parsing
+path.logs: /var/log/logstash    # Log file location
+slowlog.threshold.warn: 2s      # Warning threshold for slow operations
+slowlog.threshold.info: 1s      # Info threshold for slow operations
