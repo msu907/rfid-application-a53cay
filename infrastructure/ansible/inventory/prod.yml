@@ -1,0 +1,72 @@
+# Ansible Production Inventory
+# Version: 1.0
+# ansible-core version: 2.15+
+# Purpose: Production environment infrastructure definition for RFID Asset Tracking System
+
+# Global variables for all hosts
+all:
+  vars:
+    ansible_user: ansible
+    ansible_become: true
+    ansible_ssh_common_args: -o StrictHostKeyChecking=no
+    ansible_python_interpreter: /usr/bin/python3
+    datacenter: primary
+    environment: production
+    monitoring_enabled: true
+    high_availability: true
+
+# RFID Reader Infrastructure
+rfid_readers:
+  hosts:
+    reader-prod-[01:15]:
+      # RFID Reader Configuration
+      reader_protocol_version: "1.1"
+      read_rate: "1000"
+      frequency_band: "865-868"
+      power_level: "-20"
+      monitoring_enabled: true
+  vars:
+    reader_type: fixed
+    protocol: LLRP
+    monitoring_interval: "60"
+    health_check_enabled: true
+
+# Monitoring Infrastructure
+monitoring_servers:
+  hosts:
+    monitoring-prod-[01:03]:
+      prometheus_enabled: true
+      grafana_enabled: true
+      elk_enabled: true
+      jaeger_enabled: true
+  vars:
+    retention_days: 90
+    backup_enabled: true
+    alert_enabled: true
+
+# Application Infrastructure (AKS)
+application_servers:
+  hosts:
+    aks-prod-node-[01:05]:
+      kubernetes_role: worker
+      monitoring_agent_enabled: true
+
+# Children group definitions for specialized roles
+monitoring:
+  children:
+    monitoring_servers:
+
+kubernetes_cluster:
+  children:
+    application_servers:
+
+rfid_infrastructure:
+  children:
+    rfid_readers:
+
+# Production environment meta groups
+production:
+  children:
+    monitoring:
+    kubernetes_cluster:
+    rfid_infrastructure:
