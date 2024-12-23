@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package com.rfid.reader;
+
+import "google/protobuf/timestamp.proto"; // v3.0.0
+import "google/protobuf/empty.proto"; // v3.0.0
+import "../proto/asset.proto";
+
+option go_package = "./reader";
+option java_multiple_files = true;
+option java_package = "com.rfid.reader.proto";
+
+// Represents a physical RFID reader device with enhanced configuration and monitoring capabilities
+message Reader {
+    string id = 1;
+    string name = 2;
+    string ip_address = 3;
+    int32 port = 4;
+    ReaderStatus status = 5;
+    ReaderConfig config = 6;
+    google.protobuf.Timestamp last_heartbeat = 7;
+    map<string, string> metadata = 8;
+}
+
+// Enumeration of possible reader states with detailed status tracking
+enum ReaderStatus {
+    ONLINE = 0;
+    OFFLINE = 1;
+    ERROR = 2;
+    MAINTENANCE = 3;
+    INITIALIZING = 4;
+    DEGRADED = 5;
+}
+
+// Comprehensive configuration options for RFID readers with advanced settings
+message ReaderConfig {
+    PowerLevel power_level = 1;
+    int32 read_interval_ms = 2;
+    bool filtering_enabled = 3;
+    double signal_threshold_dbm = 4;
+    int32 antenna_count = 5;
+    repeated AntennaConfig antenna_configs = 6;
+    FilterConfig filter_config = 7;
+    map<string, string> additional_params = 8;
+}
+
+// Configuration for individual reader antennas
+message AntennaConfig {
+    int32 antenna_id = 1;
+    PowerLevel power_level = 2;
+    double sensitivity = 3;
+}
+
+// Advanced filtering configuration for read events
+message FilterConfig {
+    int32 duplicate_window_ms = 1;
+    double rssi_threshold = 2;
+    bool enable_motion_filter = 3;
+    repeated string tag_pattern_filters = 4;
+}
+
+// Enumeration of reader power levels with specific dBm ranges
+enum PowerLevel {
+    LOW = 0;
+    MEDIUM = 1;
+    HIGH = 2;
+    CUSTOM = 3;
+}
+
+// Enumeration for read quality assessment
+enum ReadQuality {
+    EXCELLENT = 0;
+    GOOD = 1;
+    FAIR = 2;
+    POOR = 3;
+}
+
+// Comprehensive representation of a single RFID tag read event
+message ReadEvent {
+    string id = 1;
+    string reader_id = 2;
+    string rfid_tag = 3;
+    double signal_strength = 4;
+    int32 antenna_id = 5;
+    google.protobuf.Timestamp read_time = 6;
+    bool is_filtered = 7;
+    ReadQuality quality = 8;
+    map<string, string> metadata = 9;
+}
+
+// Comprehensive service for managing RFID readers and processing read events with advanced capabilities
+service ReaderService {
+    // Registers a new RFID reader in the system
+    rpc RegisterReader(Reader) returns (Reader) {}
+
+    // Updates the configuration of an existing reader
+    rpc UpdateReaderConfig(ReaderConfig) returns (Reader) {}
+
+    // Retrieves reader information by ID
+    rpc GetReader(string) returns (Reader) {}
+
+    // Lists all registered readers
+    rpc ListReaders(google.protobuf.Empty) returns (stream Reader) {}
+
+    // Streams real-time read events from a specific reader
+    rpc StreamReads(string) returns (stream ReadEvent) {}
+
+    // Processes a single read event
+    rpc ProcessRead(ReadEvent) returns (google.protobuf.Empty) {}
+
+    // Monitors reader health status
+    rpc MonitorReaderHealth(string) returns (stream ReaderStatus) {}
+}
