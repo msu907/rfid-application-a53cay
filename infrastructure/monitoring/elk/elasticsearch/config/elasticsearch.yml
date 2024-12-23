@@ -1,0 +1,136 @@
+# Elasticsearch Configuration for RFID Asset Tracking System
+# Version: 7.17.0
+# Purpose: Core configuration for distributed search and analytics with security features
+
+#------------------------------------------------------------------------------
+# Cluster Settings
+#------------------------------------------------------------------------------
+# Basic cluster configuration
+cluster.name: rfid-tracking-cluster
+discovery.seed_hosts: ["es01", "es02", "es03"]
+cluster.initial_master_nodes: ["es01", "es02", "es03"]
+
+# Disk-based shard allocation settings
+cluster.routing.allocation.disk.threshold_enabled: true
+cluster.routing.allocation.disk.watermark.low: "85%"
+cluster.routing.allocation.disk.watermark.high: "90%"
+cluster.routing.allocation.disk.flood_stage: "95%"
+
+#------------------------------------------------------------------------------
+# Node Settings
+#------------------------------------------------------------------------------
+# Node identity and roles
+node.name: ${HOSTNAME}
+node.roles: ["master", "data", "ingest"]
+node.attr.zone: ${NODE_ZONE}
+node.processors: ${NODE_PROCESSORS:4}
+
+# Network settings
+network.host: "0.0.0.0"
+http.port: 9200
+
+#------------------------------------------------------------------------------
+# Paths
+#------------------------------------------------------------------------------
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+path.repo: /var/lib/elasticsearch/snapshots
+
+#------------------------------------------------------------------------------
+# Memory and Thread Pool Settings
+#------------------------------------------------------------------------------
+# Memory management
+bootstrap.memory_lock: true
+indices.memory.index_buffer_size: "30%"
+indices.fielddata.cache.size: "20%"
+indices.queries.cache.size: "5%"
+
+# Thread pool configuration
+thread_pool.write.size: 32
+thread_pool.write.queue_size: 1000
+thread_pool.search.size: 16
+thread_pool.search.queue_size: 1000
+
+#------------------------------------------------------------------------------
+# Performance Settings
+#------------------------------------------------------------------------------
+# Search and indexing performance
+indices.recovery.max_bytes_per_sec: "50mb"
+search.max_buckets: 10000
+search.max_keep_alive: "24h"
+
+# Circuit breaker settings
+indices.breaker.total.use_real_memory: true
+indices.breaker.total.limit: "70%"
+indices.breaker.fielddata.limit: "40%"
+indices.breaker.request.limit: "40%"
+
+#------------------------------------------------------------------------------
+# Security Settings (X-Pack)
+#------------------------------------------------------------------------------
+xpack.security.enabled: true
+
+# SSL/TLS Configuration for transport layer
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: "certificate"
+xpack.security.transport.ssl.keystore.path: ${ELASTIC_KEYSTORE_PATH}
+xpack.security.transport.ssl.truststore.path: ${ELASTIC_TRUSTSTORE_PATH}
+
+# SSL/TLS Configuration for HTTP layer
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.keystore.path: ${HTTP_KEYSTORE_PATH}
+xpack.security.http.ssl.truststore.path: ${HTTP_TRUSTSTORE_PATH}
+
+# API Key and authentication
+xpack.security.authc.api_key.enabled: true
+
+# Audit logging configuration
+xpack.security.audit.enabled: true
+xpack.security.audit.logfile.events.include: [
+  "authentication_success",
+  "authentication_failure",
+  "access_denied",
+  "connection_denied"
+]
+xpack.security.audit.logfile.events.emit_request_body: true
+
+#------------------------------------------------------------------------------
+# Monitoring Configuration (X-Pack)
+#------------------------------------------------------------------------------
+xpack.monitoring.enabled: true
+xpack.monitoring.collection.enabled: true
+xpack.monitoring.collection.interval: "10s"
+xpack.monitoring.history.duration: "7d"
+
+# Monitoring collection timeouts
+xpack.monitoring.collection.cluster.stats.timeout: "10s"
+xpack.monitoring.collection.node.stats.timeout: "10s"
+xpack.monitoring.collection.index.stats.timeout: "10s"
+
+# Monitoring authentication
+monitoring.elasticsearch.username: ${ELASTIC_USERNAME}
+monitoring.elasticsearch.password: ${ELASTIC_PASSWORD}
+
+#------------------------------------------------------------------------------
+# Discovery and Recovery
+#------------------------------------------------------------------------------
+# Recovery settings
+gateway.recover_after_nodes: 2
+gateway.expected_nodes: 3
+gateway.recover_after_time: "5m"
+
+# Discovery settings
+discovery.zen.minimum_master_nodes: 2
+discovery.zen.commit_timeout: "30s"
+discovery.zen.publish_timeout: "30s"
+
+#------------------------------------------------------------------------------
+# Index Settings
+#------------------------------------------------------------------------------
+# Default index settings
+index.number_of_shards: 5
+index.number_of_replicas: 1
+index.refresh_interval: "1s"
+
+# Index lifecycle management
+xpack.ilm.enabled: true
