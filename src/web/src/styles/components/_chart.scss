@@ -1,0 +1,207 @@
+// =============================================================================
+// Chart Component Styles
+// Version: 1.0.0
+// Description: Comprehensive styling for data visualization components
+// Dependencies: _variables.scss (v1.0.0)
+// =============================================================================
+
+@use '../base/variables' as *;
+
+// =============================================================================
+// Chart Container Base Styles
+// =============================================================================
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  min-width: 320px;
+  min-height: 200px;
+  aspect-ratio: 2/1;
+  margin: map-get($spacing, 'medium') 0;
+  padding: map-get($spacing, 'medium');
+  background: var(--chart-bg, #ffffff);
+  border-radius: map-get($border-radius, 'medium');
+  box-shadow: var(--chart-elevation, #{map-get($shadows, 'low')});
+  transition: all map-get($animation, 'duration', 'medium') map-get($animation, 'easing', 'standard');
+
+  // Accessibility
+  &:focus-within {
+    outline: 2px solid var(--chart-focus-ring, #{map-get($colors, 'primary', 'main')});
+    outline-offset: 2px;
+  }
+}
+
+// =============================================================================
+// SVG Chart Elements
+// =============================================================================
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  // Enable hardware acceleration
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  
+  // High-contrast mode support
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+  }
+}
+
+// =============================================================================
+// Chart Axes and Grid
+// =============================================================================
+
+.chart-axis {
+  stroke: var(--chart-axis-color, #{map-get($colors, 'text', 'secondary')});
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+
+  text {
+    font-family: map-get($typography, 'font-family', 'primary');
+    font-size: map-get($typography, 'font-sizes', 'sm');
+    fill: var(--chart-text-color, #{map-get($colors, 'text', 'secondary')});
+  }
+}
+
+.chart-grid {
+  stroke: var(--chart-grid-color, rgba(0, 0, 0, 0.1));
+  stroke-width: 1px;
+  stroke-dasharray: 4;
+  shape-rendering: crispEdges;
+}
+
+// =============================================================================
+// Chart Tooltip
+// =============================================================================
+
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background-color: var(--chart-tooltip-bg, rgba(255, 255, 255, 0.95));
+  border: 1px solid var(--chart-tooltip-border, rgba(0, 0, 0, 0.1));
+  border-radius: map-get($border-radius, 'small');
+  padding: map-get($spacing, 'small');
+  box-shadow: var(--chart-tooltip-shadow, #{map-get($shadows, 'medium')});
+  z-index: map-get($z-indices, 'tooltip');
+  
+  font-family: map-get($typography, 'font-family', 'primary');
+  font-size: map-get($typography, 'font-sizes', 'sm');
+  line-height: map-get($typography, 'line-heights', 'base');
+  
+  opacity: 0;
+  transform: translate(-50%, -100%);
+  transition: opacity map-get($animation, 'duration', 'short') map-get($animation, 'easing', 'standard');
+
+  &.visible {
+    opacity: 1;
+  }
+}
+
+// =============================================================================
+// Chart Legend
+// =============================================================================
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: map-get($spacing, 'small');
+  margin-top: map-get($spacing, 'medium');
+  
+  &-item {
+    display: flex;
+    align-items: center;
+    gap: map-get($spacing, 'small');
+    font-size: map-get($typography, 'font-sizes', 'sm');
+    
+    &-color {
+      width: 12px;
+      height: 12px;
+      border-radius: map-get($border-radius, 'small');
+    }
+  }
+}
+
+// =============================================================================
+// Responsive Breakpoints
+// =============================================================================
+
+@mixin responsive-chart($breakpoint) {
+  @if $breakpoint == 'mobile' {
+    @media (max-width: map-get($breakpoints, 'tablet') - 1) {
+      .chart-container {
+        min-height: 160px;
+        padding: map-get($spacing, 'small');
+        margin: map-get($spacing, 'small') 0;
+      }
+      
+      .chart-tooltip {
+        font-size: map-get($typography, 'font-sizes', 'xs');
+        padding: map-get($spacing, 'small');
+      }
+      
+      .chart-legend {
+        margin-top: map-get($spacing, 'small');
+      }
+    }
+  }
+  
+  @if $breakpoint == 'tablet' {
+    @media (min-width: map-get($breakpoints, 'tablet')) and (max-width: map-get($breakpoints, 'desktop') - 1) {
+      .chart-container {
+        min-height: 180px;
+      }
+    }
+  }
+  
+  @if $breakpoint == 'desktop' {
+    @media (min-width: map-get($breakpoints, 'desktop')) {
+      .chart-container {
+        min-height: 200px;
+      }
+    }
+  }
+}
+
+// Apply responsive styles
+@include responsive-chart('mobile');
+@include responsive-chart('tablet');
+@include responsive-chart('desktop');
+
+// =============================================================================
+// Dark Mode Support
+// =============================================================================
+
+@mixin chart-theme($theme-mode) {
+  @if $theme-mode == 'dark' {
+    .chart-container {
+      --chart-bg: #{map-get($colors, 'background', 'dark')};
+      --chart-axis-color: rgba(255, 255, 255, 0.6);
+      --chart-grid-color: rgba(255, 255, 255, 0.1);
+      --chart-text-color: rgba(255, 255, 255, 0.87);
+      --chart-tooltip-bg: rgba(18, 18, 18, 0.95);
+      --chart-tooltip-border: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  @include chart-theme('dark');
+}
+
+// =============================================================================
+// Print Styles
+// =============================================================================
+
+@media print {
+  .chart-container {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .chart-tooltip {
+    display: none;
+  }
+}
