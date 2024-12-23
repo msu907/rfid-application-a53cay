@@ -1,0 +1,223 @@
+// =============================================================================
+// Dark Theme - RFID Asset Tracking System UI
+// Version: 1.0.0
+// Description: Material Design dark theme implementation with accessibility focus
+// =============================================================================
+
+@use '../base/variables' as *;
+
+// =============================================================================
+// Color System Functions
+// =============================================================================
+
+@function rgba-to-hex($color, $opacity) {
+  @if type-of($color) != 'color' {
+    @error "Color must be a valid color value, got #{$color}";
+  }
+  
+  @if type-of($opacity) != 'number' or $opacity < 0 or $opacity > 1 {
+    @error "Opacity must be a number between 0 and 1, got #{$opacity}";
+  }
+  
+  $r: red($color);
+  $g: green($color);
+  $b: blue($color);
+  $a: round($opacity * 255);
+  
+  @return #{'#' + str-slice('#{hex($r)}', 1, 2) + str-slice('#{hex($g)}', 1, 2) + str-slice('#{hex($b)}', 1, 2) + str-slice('#{hex($a)}', 1, 2)};
+}
+
+@function get-elevation-color($elevation) {
+  $overlay-opacity: 0.05 * $elevation;
+  @if $overlay-opacity > 0.16 {
+    $overlay-opacity: 0.16;
+  }
+  @return mix(#fff, map-get($colors, 'background', 'dark'), $overlay-opacity * 100%);
+}
+
+// =============================================================================
+// Dark Theme Color System
+// =============================================================================
+
+$dark-theme-colors: (
+  'background': (
+    'primary': #121212,
+    'secondary': #1e1e1e,
+    'elevated': #242424,
+    'overlay': rgba(255, 255, 255, 0.08)
+  ),
+  'surface': (
+    'default': #1e1e1e,
+    'card': #242424,
+    'dialog': #2c2c2c,
+    'hover': rgba(255, 255, 255, 0.04)
+  ),
+  'primary': (
+    'main': #90caf9,
+    'light': #e3f2fd,
+    'dark': #42a5f5,
+    'contrast': #000000
+  ),
+  'secondary': (
+    'main': #ce93d8,
+    'light': #f3e5f5,
+    'dark': #ab47bc,
+    'contrast': #000000
+  ),
+  'error': (
+    'main': #f44336,
+    'light': #e57373,
+    'dark': #d32f2f,
+    'contrast': #ffffff
+  ),
+  'warning': (
+    'main': #ffa726,
+    'light': #ffb74d,
+    'dark': #f57c00,
+    'contrast': #000000
+  ),
+  'info': (
+    'main': #29b6f6,
+    'light': #4fc3f7,
+    'dark': #0288d1,
+    'contrast': #000000
+  ),
+  'success': (
+    'main': #66bb6a,
+    'light': #81c784,
+    'dark': #388e3c,
+    'contrast': #000000
+  ),
+  'text': (
+    'primary': rgba(255, 255, 255, 0.87),
+    'secondary': rgba(255, 255, 255, 0.6),
+    'disabled': rgba(255, 255, 255, 0.38),
+    'hint': rgba(255, 255, 255, 0.38)
+  ),
+  'divider': rgba(255, 255, 255, 0.12)
+);
+
+// =============================================================================
+// Status Colors
+// =============================================================================
+
+$status-colors: (
+  'asset': (
+    'active': map-get($dark-theme-colors, 'success', 'main'),
+    'inactive': map-get($dark-theme-colors, 'error', 'main'),
+    'moving': map-get($dark-theme-colors, 'warning', 'main'),
+    'unknown': #757575
+  ),
+  'reader': (
+    'online': map-get($dark-theme-colors, 'success', 'main'),
+    'offline': map-get($dark-theme-colors, 'error', 'main'),
+    'warning': map-get($dark-theme-colors, 'warning', 'main'),
+    'initializing': map-get($dark-theme-colors, 'info', 'main')
+  )
+);
+
+// =============================================================================
+// Elevation System
+// =============================================================================
+
+$elevation-colors: (
+  0: map-get($dark-theme-colors, 'surface', 'default'),
+  1: get-elevation-color(1),
+  2: get-elevation-color(2),
+  3: get-elevation-color(3),
+  4: get-elevation-color(4),
+  6: get-elevation-color(6),
+  8: get-elevation-color(8),
+  12: get-elevation-color(12),
+  16: get-elevation-color(16),
+  24: get-elevation-color(24)
+);
+
+// =============================================================================
+// Dark Theme Class
+// =============================================================================
+
+.dark-theme {
+  background-color: map-get($dark-theme-colors, 'background', 'primary');
+  color: map-get($dark-theme-colors, 'text', 'primary');
+  
+  // Typography adjustments for dark mode readability
+  font-family: map-get($typography, 'font-family', 'primary');
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  // Surface styles
+  .surface {
+    background-color: map-get($dark-theme-colors, 'surface', 'default');
+    
+    &--card {
+      background-color: map-get($dark-theme-colors, 'surface', 'card');
+    }
+    
+    &--dialog {
+      background-color: map-get($dark-theme-colors, 'surface', 'dialog');
+    }
+    
+    &:hover {
+      background-color: map-get($dark-theme-colors, 'surface', 'hover');
+    }
+  }
+  
+  // Elevation mixin
+  @mixin apply-elevation($level) {
+    @if not map-has-key($elevation-colors, $level) {
+      @error "Invalid elevation level: #{$level}";
+    }
+    
+    background-color: map-get($elevation-colors, $level);
+    transition: background-color map-get($animation, 'duration', 'medium') 
+                map-get($animation, 'easing', 'standard');
+  }
+  
+  // Status indicators
+  .status-indicator {
+    &--asset {
+      &-active { background-color: map-get($status-colors, 'asset', 'active'); }
+      &-inactive { background-color: map-get($status-colors, 'asset', 'inactive'); }
+      &-moving { background-color: map-get($status-colors, 'asset', 'moving'); }
+      &-unknown { background-color: map-get($status-colors, 'asset', 'unknown'); }
+    }
+    
+    &--reader {
+      &-online { background-color: map-get($status-colors, 'reader', 'online'); }
+      &-offline { background-color: map-get($status-colors, 'reader', 'offline'); }
+      &-warning { background-color: map-get($status-colors, 'reader', 'warning'); }
+      &-initializing { background-color: map-get($status-colors, 'reader', 'initializing'); }
+    }
+  }
+  
+  // Accessibility focus styles
+  :focus-visible {
+    outline: 2px solid map-get($dark-theme-colors, 'primary', 'main');
+    outline-offset: 2px;
+  }
+  
+  // Interactive states
+  .interactive {
+    &:hover {
+      background-color: map-get($dark-theme-colors, 'surface', 'hover');
+    }
+    
+    &:active {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+    
+    &:disabled {
+      color: map-get($dark-theme-colors, 'text', 'disabled');
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Export theme variables
+:export {
+  colors: $dark-theme-colors;
+  surface-colors: map-get($dark-theme-colors, 'surface');
+  status-colors: $status-colors;
+  elevation-colors: $elevation-colors;
+}
