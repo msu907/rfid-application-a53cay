@@ -1,0 +1,150 @@
+# Core Spring Boot Configuration
+spring:
+  application:
+    name: asset-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  
+  # Database Configuration
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/rfid_assets}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_MIN_IDLE:5}
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+  
+  # JPA Configuration  
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc.time_zone: UTC
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+    hibernate:
+      ddl-auto: validate
+  
+  # Flyway Migration Configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+  
+  # Security Configuration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI}
+          jwk-set-uri: ${JWT_JWK_SET_URI}
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8081}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
+  tomcat:
+    max-threads: ${SERVER_MAX_THREADS:200}
+    min-spare-threads: 20
+    max-connections: 10000
+    accept-count: 100
+    connection-timeout: 5000
+
+# Management & Monitoring Configuration
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+
+# Logging Configuration
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    com.rfid.asset: ${LOG_LEVEL:INFO}
+    org.springframework: WARN
+    org.hibernate: WARN
+
+# Cache Configuration
+cache:
+  asset:
+    ttl: ${CACHE_TTL:3600}
+    max-size: ${CACHE_MAX_SIZE:1000}
+
+---
+# Development Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.rfid.asset: DEBUG
+    org.springframework: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+---
+# Production Profile Configuration
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    show-sql: false
+
+server:
+  compression:
+    enabled: true
+
+logging:
+  level:
+    com.rfid.asset: WARN
+    org.springframework: ERROR
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+
+cache:
+  asset:
+    ttl: 7200
+    max-size: 5000
