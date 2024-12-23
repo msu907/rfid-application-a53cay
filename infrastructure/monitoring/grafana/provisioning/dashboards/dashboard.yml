@@ -1,0 +1,73 @@
+# Grafana Dashboard Provisioning Configuration v9.5.0
+# Configures automated loading and management of monitoring dashboards 
+# for the RFID Asset Tracking System
+
+apiVersion: 1
+
+providers:
+  # Main RFID Asset Tracking dashboard provider configuration
+  - name: rfid-dashboards
+    type: file
+    folder: RFID Asset Tracking
+    options:
+      # Path where dashboard JSON files are stored
+      path: /etc/grafana/provisioning/dashboards
+      # Create folder structure matching file organization
+      foldersFromFilesStructure: true
+    
+    # Prevent manual dashboard updates through UI to maintain consistency
+    allowUiUpdates: false
+    
+    # Prevent dashboard deletion to maintain required monitoring coverage
+    disableDeletion: true
+    
+    # Update interval for dashboard configurations (1 minute)
+    updateIntervalSeconds: 60
+
+    # Default editable state for all dashboards
+    editable: false
+
+    # Organization ID where dashboards will be stored
+    orgId: 1
+
+    # Dashboard search configuration
+    searchable: true
+
+    # Dashboard refresh intervals
+    # Matches monitoring requirements for real-time metrics
+    refresh: "10s"  # 10 second refresh for real-time monitoring
+
+    # Dashboard permissions
+    # Restricted to monitoring team and system administrators
+    permissions:
+      - role: "Viewer"
+        permission: "View"
+      - role: "Editor" 
+        permission: "Edit"
+      - role: "Admin"
+        permission: "Admin"
+
+    # Dashboard loading rules
+    disableUpload: true
+    allowInsecureUpload: false
+
+    # Version control settings
+    # Track dashboard changes and enable rollback capability
+    versions:
+      enabled: true
+      limit: 10  # Keep last 10 versions
+
+    # Dashboard defaults
+    defaults:
+      # Default timezone for all dashboards
+      timezone: "utc"
+      # Default refresh intervals available
+      refresh_intervals:
+        - "5s"
+        - "10s"
+        - "30s"
+        - "1m"
+        - "5m"
+        - "15m"
+        - "30m"
+        - "1h"
