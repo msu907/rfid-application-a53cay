@@ -1,0 +1,197 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_ENV: test
+  PYTHON_ENV: test
+  SPRING_PROFILES_ACTIVE: test
+  COVERAGE_THRESHOLD: 80
+  MAX_TIMEOUT_MINUTES: 30
+
+jobs:
+  frontend-ci:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ env.MAX_TIMEOUT_MINUTES }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: src/web
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: src/web
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        working-directory: src/web
+        run: npm run typecheck
+
+      - name: Run unit tests
+        working-directory: src/web
+        run: npm run test:coverage
+
+      - name: Run security scan
+        uses: snyk/actions/node@v3
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Build application
+        working-directory: src/web
+        run: npm run build
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: frontend
+          fail_ci_if_error: true
+
+  api-gateway-ci:
+    name: API Gateway CI
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ env.MAX_TIMEOUT_MINUTES }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: src/backend/api-gateway/package-lock.json
+
+      - name: Install dependencies
+        working-directory: src/backend/api-gateway
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: src/backend/api-gateway
+        run: npm run lint
+
+      - name: Run unit tests
+        working-directory: src/backend/api-gateway
+        run: npm run test
+
+      - name: Run security scan
+        uses: snyk/actions/node@v3
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Build service
+        working-directory: src/backend/api-gateway
+        run: npm run build
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: api-gateway
+          fail_ci_if_error: true
+
+  asset-service-ci:
+    name: Asset Service CI
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ env.MAX_TIMEOUT_MINUTES }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Validate Maven wrapper
+        working-directory: src/backend/asset-service
+        run: mvn --version
+
+      - name: Run tests and build
+        working-directory: src/backend/asset-service
+        run: mvn clean verify
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: asset-service
+          fail_ci_if_error: true
+
+  reader-service-ci:
+    name: Reader Service CI
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ env.MAX_TIMEOUT_MINUTES }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        working-directory: src/backend/reader-service
+        run: poetry install
+
+      - name: Run linting
+        working-directory: src/backend/reader-service
+        run: |
+          poetry run flake8
+          poetry run black --check .
+          poetry run isort --check-only .
+
+      - name: Run type checking
+        working-directory: src/backend/reader-service
+        run: poetry run mypy .
+
+      - name: Run tests
+        working-directory: src/backend/reader-service
+        run: poetry run pytest
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: reader-service
+          fail_ci_if_error: true
