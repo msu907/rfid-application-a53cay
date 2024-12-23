@@ -1,0 +1,72 @@
+# Kustomize configuration for RFID Asset Tracking System
+# Version: v5.0.0
+# Purpose: Base configuration for Kubernetes resources with enhanced security and monitoring
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Core resources for the RFID Asset Tracking System
+resources:
+  - resources/api-gateway-deployment.yaml
+  - resources/asset-service-deployment.yaml
+  - resources/reader-service-deployment.yaml
+  - resources/visualization-service-deployment.yaml
+  - resources/configmap.yaml
+  - resources/secret.yaml
+  - resources/service.yaml
+  - resources/monitoring.yaml
+  - resources/rbac.yaml
+
+# Common labels for all resources
+commonLabels:
+  app: rfid-asset-tracking
+  tier: backend
+  managed-by: kustomize
+  environment: base
+  version: 1.0.0
+
+# ConfigMap generation for application configuration
+configMapGenerator:
+  - name: rfid-config
+    literals:
+      - API_VERSION=v1
+      - GRPC_PORT=5000
+      - HTTP_PORT=3000
+      - LOG_LEVEL=info
+      - METRICS_PORT=9090
+      - TRACING_ENABLED=true
+      - MAX_CONNECTIONS=1000
+      - READER_TIMEOUT=30s
+
+# Secret generation for sensitive data
+secretGenerator:
+  - name: rfid-secrets
+    type: Opaque
+    files:
+      - secrets/jwt-secret.txt
+      - secrets/db-credentials.txt
+      - secrets/api-keys.txt
+      - secrets/tls-cert.txt
+      - secrets/tls-key.txt
+
+# Image configuration for all microservices
+images:
+  - name: api-gateway
+    newName: rfid-asset-tracking/api-gateway
+    newTag: latest
+    digest: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  
+  - name: asset-service
+    newName: rfid-asset-tracking/asset-service
+    newTag: latest
+    digest: sha256:a3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  
+  - name: reader-service
+    newName: rfid-asset-tracking/reader-service
+    newTag: latest
+    digest: sha256:b3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  
+  - name: visualization-service
+    newName: rfid-asset-tracking/visualization-service
+    newTag: latest
+    digest: sha256:c3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
