@@ -1,0 +1,258 @@
+// =============================================================================
+// Button Component Styles
+// Version: 1.0.0
+// Description: Material Design button implementation with comprehensive styling,
+// states, accessibility features, and responsive behavior
+// =============================================================================
+
+// Import required variables
+@use '../base/variables' as *;
+
+// Button color definitions
+$button-colors: (
+  'primary': #1976d2,
+  'primary-hover': #1565c0,
+  'primary-active': #0d47a1,
+  'secondary': #9c27b0,
+  'secondary-hover': #7b1fa2,
+  'secondary-active': #6a1b9a,
+  'outlined-border': rgba(0, 0, 0, 0.12),
+  'disabled': #e0e0e0,
+  'disabled-text': rgba(0, 0, 0, 0.38),
+  'text-light': #ffffff,
+  'text-dark': rgba(0, 0, 0, 0.87)
+);
+
+// Button size configurations
+$button-sizes: (
+  'small': (
+    'height': 32px,
+    'padding': 0 8px,
+    'font-size': 14px,
+    'min-width': 64px,
+    'touch-target': 44px
+  ),
+  'medium': (
+    'height': 36px,
+    'padding': 0 16px,
+    'font-size': 14px,
+    'min-width': 64px,
+    'touch-target': 48px
+  ),
+  'large': (
+    'height': 42px,
+    'padding': 0 24px,
+    'font-size': 16px,
+    'min-width': 76px,
+    'touch-target': 52px
+  )
+);
+
+// Button variant mixin
+@mixin button-variant($variant) {
+  @if $variant == 'primary' {
+    background-color: map-get($button-colors, 'primary');
+    color: map-get($button-colors, 'text-light');
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+    &:hover:not(:disabled) {
+      background-color: map-get($button-colors, 'primary-hover');
+    }
+
+    &:active:not(:disabled) {
+      background-color: map-get($button-colors, 'primary-active');
+    }
+  } @else if $variant == 'secondary' {
+    background-color: map-get($button-colors, 'secondary');
+    color: map-get($button-colors, 'text-light');
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+    &:hover:not(:disabled) {
+      background-color: map-get($button-colors, 'secondary-hover');
+    }
+
+    &:active:not(:disabled) {
+      background-color: map-get($button-colors, 'secondary-active');
+    }
+  } @else if $variant == 'outlined' {
+    background-color: transparent;
+    color: map-get($button-colors, 'primary');
+    border: 1px solid map-get($button-colors, 'outlined-border');
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+      background-color: rgba(25, 118, 210, 0.04);
+    }
+
+    &:active:not(:disabled) {
+      background-color: rgba(25, 118, 210, 0.12);
+    }
+  } @else if $variant == 'text' {
+    background-color: transparent;
+    color: map-get($button-colors, 'primary');
+    box-shadow: none;
+    padding-left: map-get($spacing, 'base');
+    padding-right: map-get($spacing, 'base');
+
+    &:hover:not(:disabled) {
+      background-color: rgba(25, 118, 210, 0.04);
+    }
+
+    &:active:not(:disabled) {
+      background-color: rgba(25, 118, 210, 0.12);
+    }
+  }
+}
+
+// Button size mixin
+@mixin button-size($size) {
+  $size-config: map-get($button-sizes, $size);
+  height: map-get($size-config, 'height');
+  padding: map-get($size-config, 'padding');
+  font-size: map-get($size-config, 'font-size');
+  min-width: map-get($size-config, 'min-width');
+
+  // Ensure proper touch target size for mobile
+  @media (hover: none) and (pointer: coarse) {
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: map-get($size-config, 'touch-target');
+      height: map-get($size-config, 'touch-target');
+    }
+  }
+}
+
+// Base button styles
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0 map-get($spacing, 'medium');
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+  text-decoration: none;
+  text-align: center;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  font-family: map-get(map-get($typography, 'font-family'), 'primary');
+  font-weight: map-get(map-get($typography, 'font-weights'), 'medium');
+  transition: all 0.2s ease-in-out;
+  outline: none;
+
+  // Accessibility focus styles
+  &:focus-visible {
+    outline: 2px solid map-get($button-colors, 'primary');
+    outline-offset: 2px;
+  }
+
+  // Disabled state
+  &:disabled,
+  &--disabled {
+    background-color: map-get($button-colors, 'disabled') !important;
+    color: map-get($button-colors, 'disabled-text') !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+    pointer-events: none;
+  }
+
+  // Button variants
+  &--primary {
+    @include button-variant('primary');
+  }
+
+  &--secondary {
+    @include button-variant('secondary');
+  }
+
+  &--outlined {
+    @include button-variant('outlined');
+  }
+
+  &--text {
+    @include button-variant('text');
+  }
+
+  // Button sizes
+  &--small {
+    @include button-size('small');
+  }
+
+  &--medium {
+    @include button-size('medium');
+  }
+
+  &--large {
+    @include button-size('large');
+  }
+
+  // Full width modifier
+  &--full-width {
+    width: 100%;
+  }
+
+  // Icon support
+  &--with-icon {
+    .btn__icon {
+      margin-right: map-get($spacing, 'base');
+      font-size: 1.25em;
+      
+      &--right {
+        margin-right: 0;
+        margin-left: map-get($spacing, 'base');
+      }
+    }
+  }
+
+  // Loading state
+  &--loading {
+    position: relative;
+    pointer-events: none;
+    
+    .btn__content {
+      opacity: 0;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      margin: -8px 0 0 -8px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: button-loading 0.75s infinite linear;
+    }
+  }
+}
+
+// Loading animation
+@keyframes button-loading {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// High contrast mode adjustments
+@media (forced-colors: active) {
+  .btn {
+    border: 1px solid currentColor;
+    
+    &--outlined {
+      border-width: 2px;
+    }
+  }
+}
