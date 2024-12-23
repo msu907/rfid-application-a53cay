@@ -1,0 +1,124 @@
+# Kibana 7.17.0 Production Configuration
+# This configuration file defines comprehensive server settings, enhanced security parameters,
+# detailed monitoring configuration, and Elasticsearch connection details for the RFID Asset
+# Tracking System's visualization and analytics interface
+
+#------------------------------------------------------------------------------
+# Server Configuration
+#------------------------------------------------------------------------------
+server.name: ${HOSTNAME}
+server.host: "0.0.0.0"
+server.port: 5601
+server.maxPayloadBytes: 1048576
+
+# SSL/TLS Configuration
+server.ssl.enabled: true
+server.ssl.certificate: "/etc/kibana/certs/kibana.crt"
+server.ssl.key: "/etc/kibana/certs/kibana.key"
+
+#------------------------------------------------------------------------------
+# Elasticsearch Connection
+#------------------------------------------------------------------------------
+# Core settings
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.pingTimeout: 1500
+elasticsearch.requestTimeout: 30000
+elasticsearch.shardTimeout: 30000
+
+# Authentication
+elasticsearch.username: ${ELASTIC_USERNAME}
+elasticsearch.password: ${ELASTIC_PASSWORD}
+
+# SSL verification
+elasticsearch.ssl.verificationMode: "certificate"
+elasticsearch.ssl.certificateAuthorities: ["${KIBANA_CA_PATH}"]
+
+#------------------------------------------------------------------------------
+# Security Configuration
+#------------------------------------------------------------------------------
+# X-Pack Security
+xpack.security.enabled: true
+xpack.security.encryptionKey: ${KIBANA_ENCRYPTION_KEY}
+
+# Session Management
+xpack.security.session.idleTimeout: "1h"
+xpack.security.session.lifespan: "24h"
+
+# Audit Logging
+xpack.security.audit.enabled: true
+xpack.security.audit.ignore_filters:
+  - actions: ["system_info"]
+  - categories: ["debug"]
+
+# Authentication Providers
+xpack.security.authc.providers: ["basic"]
+xpack.security.authc.oidc.realm: "oidc1"
+
+#------------------------------------------------------------------------------
+# Monitoring Configuration
+#------------------------------------------------------------------------------
+# X-Pack Monitoring
+xpack.monitoring.enabled: true
+xpack.monitoring.collection.enabled: true
+xpack.monitoring.collection.interval: "10s"
+xpack.monitoring.min_interval_seconds: 10
+
+# Container Monitoring
+monitoring.ui.container.elasticsearch.enabled: true
+monitoring.ui.container.logstash.enabled: true
+
+# Monitoring Authentication
+monitoring.elasticsearch.username: ${ELASTIC_USERNAME}
+monitoring.elasticsearch.password: ${ELASTIC_PASSWORD}
+
+# Alerting
+monitoring.cluster_alerts.email_notifications.email_address: ${ALERT_EMAIL}
+
+#------------------------------------------------------------------------------
+# Performance Optimization
+#------------------------------------------------------------------------------
+# Operations
+ops.interval: 5000
+
+# Optimization
+optimize.bundleFilter: "!tests"
+optimize.watchPort: 5602
+
+# CPU Settings
+cpu.cgroup.path.override: "/"
+
+#------------------------------------------------------------------------------
+# Logging Configuration
+#------------------------------------------------------------------------------
+logging.json: true
+
+#------------------------------------------------------------------------------
+# Path Configuration
+#------------------------------------------------------------------------------
+path.data: /var/lib/kibana
+path.logs: /var/log/kibana
+
+#------------------------------------------------------------------------------
+# Feature Controls
+#------------------------------------------------------------------------------
+# Disable unnecessary features for production
+telemetry.enabled: false
+telemetry.allowChangingOptInStatus: false
+
+# Set appropriate timeouts for production use
+elasticsearch.pingTimeout: 1500
+elasticsearch.requestTimeout: 30000
+elasticsearch.shardTimeout: 30000
+
+#------------------------------------------------------------------------------
+# Memory Settings
+#------------------------------------------------------------------------------
+# Node memory limits
+node.options:
+  - "--max-old-space-size=1024"
+
+#------------------------------------------------------------------------------
+# Cache Settings
+#------------------------------------------------------------------------------
+cache:
+  maxAge: 3600000
