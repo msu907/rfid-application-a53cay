@@ -1,0 +1,207 @@
+// =============================================================================
+// Form Styles
+// Version: 1.0.0
+// Description: Material Design form components with accessibility and responsive features
+// =============================================================================
+
+@use '../base/variables' as *;
+
+// Form-specific variables
+:root {
+  --input-height: 48px;
+  --input-padding: 16px;
+  --border-radius: #{map-get($border-radius, 'small')};
+  --transition-duration: #{map-get($animation, 'duration', 'medium')};
+  --touch-target-size: 44px;
+  --label-spacing: #{map-get($spacing, 'base')};
+  --error-color: #{map-get($colors, 'error', 'main')};
+  --success-color: #{map-get($colors, 'secondary', 'main')};
+  --warning-color: #{map-get($colors, 'secondary', 'light')};
+  --focus-ring-color: #{map-get($colors, 'primary', 'main')};
+  --focus-ring-width: 2px;
+  --icon-size: 24px;
+}
+
+// Base form container
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: map-get($spacing, 'medium');
+  max-width: 100%;
+  width: 100%;
+}
+
+// Form field group
+.form-group {
+  margin-bottom: map-get($spacing, 'medium');
+  position: relative;
+  width: 100%;
+}
+
+// Form label
+.form-label {
+  display: block;
+  font-family: map-get($typography, 'font-family', 'primary');
+  font-size: map-get($typography, 'font-sizes', 'sm');
+  font-weight: map-get($typography, 'font-weights', 'medium');
+  color: map-get($colors, 'text', 'primary');
+  margin-bottom: var(--label-spacing);
+
+  &[data-required]::after {
+    content: "*";
+    color: var(--error-color);
+    margin-left: map-get($spacing, 'small');
+  }
+}
+
+// Form input base styles
+@mixin form-field($custom-styles: (), $touch-friendly: true) {
+  height: var(--input-height);
+  padding: var(--input-padding);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  background-color: map-get($colors, 'background', 'default');
+  font-family: map-get($typography, 'font-family', 'primary');
+  font-size: map-get($typography, 'font-sizes', 'base');
+  line-height: map-get($typography, 'line-heights', 'base');
+  width: 100%;
+  transition: all var(--transition-duration) #{map-get($animation, 'easing', 'standard')};
+
+  // Touch-friendly adjustments
+  @if $touch-friendly {
+    @media (pointer: coarse) {
+      min-height: var(--touch-target-size);
+    }
+  }
+
+  // Focus states
+  &:focus {
+    outline: none;
+    border-color: var(--focus-ring-color);
+    box-shadow: 0 0 0 var(--focus-ring-width) rgba(map-get($colors, 'primary', 'main'), 0.2);
+  }
+
+  // Disabled state
+  &:disabled {
+    background-color: map-get($colors, 'background', 'paper');
+    color: map-get($colors, 'text', 'disabled');
+    cursor: not-allowed;
+  }
+
+  // Custom styles
+  @each $property, $value in $custom-styles {
+    #{$property}: $value;
+  }
+}
+
+// Form validation states
+@mixin form-validation($state: 'error', $animate: true) {
+  $state-color: var(--#{$state}-color);
+  
+  .form-input {
+    border-color: $state-color;
+    padding-right: calc(var(--input-padding) * 2 + var(--icon-size));
+    
+    &:focus {
+      box-shadow: 0 0 0 var(--focus-ring-width) rgba($state-color, 0.2);
+    }
+  }
+
+  .validation-icon {
+    position: absolute;
+    right: var(--input-padding);
+    top: 50%;
+    transform: translateY(-50%);
+    width: var(--icon-size);
+    height: var(--icon-size);
+    color: $state-color;
+  }
+
+  .validation-message {
+    font-size: map-get($typography, 'font-sizes', 'sm');
+    color: $state-color;
+    margin-top: map-get($spacing, 'small');
+    
+    @if $animate {
+      animation: messageSlideIn var(--transition-duration) #{map-get($animation, 'easing', 'standard')};
+    }
+  }
+}
+
+// Form layout patterns
+@mixin form-layout($layout-type: 'stacked') {
+  @if $layout-type == 'inline' {
+    display: flex;
+    flex-wrap: wrap;
+    gap: map-get($spacing, 'medium');
+
+    .form-group {
+      flex: 1;
+      min-width: 200px;
+      margin-bottom: 0;
+    }
+  } @else if $layout-type == 'grid' {
+    display: grid;
+    gap: map-get($spacing, 'medium');
+    
+    @media (min-width: map-get($breakpoints, 'tablet')) {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+  }
+}
+
+// File upload component
+.form-file-upload {
+  border: 2px dashed rgba(0, 0, 0, 0.23);
+  border-radius: var(--border-radius);
+  padding: map-get($spacing, 'large');
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition-duration) #{map-get($animation, 'easing', 'standard')};
+
+  &:hover, &.dragover {
+    border-color: var(--focus-ring-color);
+  }
+
+  input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+}
+
+// Animation keyframes
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Accessibility enhancements
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// High contrast mode adjustments
+@media (forced-colors: active) {
+  .form-input {
+    border: 2px solid ButtonText;
+  }
+  
+  .form-input:focus {
+    outline: 2px solid Highlight;
+  }
+}
