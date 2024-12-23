@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package com.rfid.visualization;
+
+import "google/protobuf/timestamp.proto"; // v3.0.0
+import "google/protobuf/empty.proto"; // v3.0.0
+import "../proto/asset.proto";
+import "../proto/reader.proto";
+
+option go_package = "./visualization";
+option java_multiple_files = true;
+option java_package = "com.rfid.visualization.proto";
+
+// Configuration for dashboard visualization components
+message DashboardConfig {
+    string id = 1;
+    string user_id = 2;
+    repeated WidgetConfig widgets = 3;
+    map<string, string> preferences = 4;
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp updated_at = 6;
+}
+
+// Configuration for individual dashboard widgets
+message WidgetConfig {
+    string id = 1;
+    WidgetType type = 2;
+    string title = 3;
+    Position position = 4;
+    map<string, string> settings = 5;
+    bool auto_refresh = 6;
+    int32 refresh_interval_seconds = 7;
+}
+
+// Types of available visualization widgets
+enum WidgetType {
+    WIDGET_TYPE_UNSPECIFIED = 0;
+    ASSET_MAP = 1;
+    ASSET_LIST = 2;
+    READ_HISTORY = 3;
+    READER_STATUS = 4;
+    MOVEMENT_TRAIL = 5;
+    STATISTICS = 6;
+}
+
+// Widget position in dashboard grid
+message Position {
+    int32 row = 1;
+    int32 column = 2;
+    int32 width = 3;
+    int32 height = 4;
+}
+
+// Real-time data for visualization updates
+message VisualizationData {
+    string widget_id = 1;
+    DataType type = 2;
+    bytes payload = 3;
+    google.protobuf.Timestamp timestamp = 4;
+    string source_id = 5;
+    Priority priority = 6;
+}
+
+// Types of visualization data updates
+enum DataType {
+    DATA_TYPE_UNSPECIFIED = 0;
+    LOCATION_UPDATE = 1;
+    STATUS_CHANGE = 2;
+    READ_EVENT = 3;
+    STATISTICS_UPDATE = 4;
+}
+
+// Priority levels for visualization updates
+enum Priority {
+    PRIORITY_UNSPECIFIED = 0;
+    LOW = 1;
+    MEDIUM = 2;
+    HIGH = 3;
+    CRITICAL = 4;
+}
+
+// Statistics data for dashboard widgets
+message StatisticsData {
+    map<string, int64> counts = 1;
+    map<string, double> metrics = 2;
+    TimeRange time_period = 3;
+    repeated TimeSeriesPoint time_series = 4;
+}
+
+// Single point in a time series
+message TimeSeriesPoint {
+    google.protobuf.Timestamp timestamp = 1;
+    string metric_name = 2;
+    double value = 3;
+}
+
+// Time range for historical data
+message TimeRange {
+    google.protobuf.Timestamp start_time = 1;
+    google.protobuf.Timestamp end_time = 2;
+}
+
+// Request to get dashboard configuration
+message GetDashboardConfigRequest {
+    string user_id = 1;
+    string dashboard_id = 2;
+}
+
+// Request to update dashboard configuration
+message UpdateDashboardConfigRequest {
+    DashboardConfig config = 1;
+    bool partial_update = 2;
+}
+
+// Request to stream visualization data
+message StreamVisualizationRequest {
+    string dashboard_id = 1;
+    repeated string widget_ids = 2;
+    repeated DataType data_types = 3;
+    Priority min_priority = 4;
+}
+
+// Service for managing real-time visualization data
+service VisualizationService {
+    // Gets dashboard configuration for a user
+    rpc GetDashboardConfig(GetDashboardConfigRequest) returns (DashboardConfig) {}
+
+    // Updates dashboard configuration
+    rpc UpdateDashboardConfig(UpdateDashboardConfigRequest) returns (DashboardConfig) {}
+
+    // Streams real-time visualization data
+    rpc StreamVisualizationData(StreamVisualizationRequest) returns (stream VisualizationData) {}
+
+    // Gets historical statistics data
+    rpc GetStatistics(TimeRange) returns (StatisticsData) {}
+
+    // Creates a new dashboard configuration
+    rpc CreateDashboard(DashboardConfig) returns (DashboardConfig) {}
+
+    // Deletes a dashboard configuration
+    rpc DeleteDashboard(string) returns (google.protobuf.Empty) {}
+}
