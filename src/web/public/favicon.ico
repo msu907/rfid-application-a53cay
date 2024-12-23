@@ -1,0 +1,32 @@
+Format: ICO (Windows Icon)
+Dimensions: Multi-resolution container with 16x16 and 32x32 pixel versions
+Color Depth: 32-bit with alpha channel support
+File Size: Approximately 4-8 KB
+
+Design Elements:
+1. Primary Icon (32x32):
+- RFID antenna symbol rendered as a simplified curved line design
+- Tag element represented by a small rectangle intersecting the antenna
+- System brand colors using high contrast ratios
+- Transparent background for versatile display
+- Anti-aliased edges for crisp rendering
+
+2. Small Icon (16x16):
+- Simplified version of the primary design
+- Optimized edge contrast for small-scale visibility
+- Reduced detail while maintaining recognizability
+- Enhanced pixel-level optimization
+
+Technical Requirements:
+- ICO container format with multiple resolution support
+- PNG-compressed images within ICO container
+- Alpha channel support for transparency
+- Browser cache optimization through proper headers
+- Broad browser compatibility (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+
+Implementation Notes:
+1. Create using professional icon editing software (e.g., Adobe Photoshop, Affinity Designer)
+2. Export with "Save for Web" or equivalent optimization
+3. Verify rendering across specified browsers
+4. Test favicon appearance in both light and dark browser themes
+5. Validate ICO format structure and compression
