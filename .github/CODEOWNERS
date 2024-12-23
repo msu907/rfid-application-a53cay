@@ -1,0 +1,39 @@
+# Unless a later match takes precedence, @project-leads will be requested for
+# review when someone opens a pull request.
+*       @project-leads
+
+# Frontend application ownership
+# Requires review from frontend team and security team for UI/UX and security validation
+src/web/**      @frontend-team @security-team
+
+# API Gateway service ownership
+# Requires review from backend team and security team for API security
+src/backend/api-gateway/**     @backend-team @security-team
+
+# Asset management service ownership
+# Requires review from backend, data, and security teams for data handling
+src/backend/asset-service/**   @backend-team @data-team @security-team
+
+# RFID reader service ownership
+# Requires review from backend, IoT, and security teams for device security
+src/backend/reader-service/**  @backend-team @iot-team @security-team
+
+# Visualization service ownership
+# Requires review from backend, frontend, and security teams for data visualization
+src/backend/visualization-service/**    @backend-team @frontend-team @security-team
+
+# Infrastructure configuration ownership
+# Requires review from DevOps and security teams for infrastructure security
+infrastructure/**     @devops-team @security-team
+
+# CI/CD workflow ownership
+# Requires review from DevOps and security teams for pipeline security
+.github/workflows/**  @devops-team @security-team
+
+# Security configuration ownership
+# Requires review from security team and backend team for all security-related files
+src/backend/**/security*.{ts,java,py}  @security-team @backend-team
+
+# Test suite ownership
+# Requires review from QA and backend teams for test coverage
+src/backend/**/test/**    @qa-team @backend-team
