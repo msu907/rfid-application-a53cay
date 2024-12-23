@@ -1,0 +1,188 @@
+---
+# Ansible playbook for RFID reader configuration and management
+# Version: 1.0
+# Requires: ansible-core 2.15+
+# Purpose: Configures and manages RFID readers with comprehensive protocol settings,
+#          network configuration, monitoring setup, and reliability measures
+
+- name: Configure and manage RFID readers
+  hosts: rfid_readers
+  become: true
+  gather_facts: true
+  
+  vars:
+    # LLRP Protocol Configuration
+    llrp_version: '1.1'
+    read_rate: 1000  # tags/second
+    frequency_band: '865-868'  # MHz (EU)
+    power_level: -20  # dBm
+    
+    # Monitoring and Health Check Settings
+    monitoring_enabled: true
+    health_check_interval: 60  # seconds
+    retry_attempts: 3
+    retry_delay: 5  # seconds
+    performance_threshold_ms: 500
+    
+    # Security and Maintenance
+    ssl_enabled: true
+    backup_enabled: true
+    maintenance_window: '0 2 * * *'  # 2 AM daily
+  
+  tasks:
+    - name: Validate prerequisites
+      block:
+        - name: Check RFID reader connectivity
+          ansible.builtin.wait_for:
+            host: "{{ inventory_hostname }}"
+            port: 5084  # LLRP default port
+            timeout: 10
+          register: connectivity_check
+          retries: "{{ retry_attempts }}"
+          delay: "{{ retry_delay }}"
+      rescue:
+        - name: Notify monitoring of connection failure
+          ansible.builtin.uri:
+            url: http://monitoring-service/api/v1/alerts
+            method: POST
+            body_format: json
+            body:
+              alert_type: connection_lost
+              host: "{{ inventory_hostname }}"
+              timestamp: "{{ ansible_date_time.iso8601 }}"
+          ignore_errors: true
+        - name: Fail on connection error
+          ansible.builtin.fail:
+            msg: "Unable to establish connection to RFID reader {{ inventory_hostname }}"
+
+    - name: Backup current configuration
+      ansible.builtin.shell:
+        cmd: backup-reader-config.sh {{ inventory_hostname }}
+      when: backup_enabled
+      register: backup_result
+      
+    - name: Configure LLRP protocol settings
+      ansible.builtin.template:
+        src: templates/llrp_config.xml.j2
+        dest: /etc/rfid/llrp_config.xml
+        owner: rfid
+        group: rfid
+        mode: '0644'
+        validate: 'llrp-validate %s'
+      notify: restart_reader_service
+      
+    - name: Set reader performance parameters
+      ansible.builtin.template:
+        src: templates/reader_performance.conf.j2
+        dest: /etc/rfid/performance.conf
+        owner: rfid
+        group: rfid
+        mode: '0644'
+      vars:
+        max_read_rate: "{{ read_rate }}"
+        power_settings:
+          min_power: -70
+          max_power: "{{ power_level }}"
+          current: "{{ power_level }}"
+      notify: restart_reader_service
+
+    - name: Configure monitoring agents
+      block:
+        - name: Install monitoring agent
+          ansible.builtin.package:
+            name: rfid-monitoring-agent
+            state: present
+            
+        - name: Configure monitoring settings
+          ansible.builtin.template:
+            src: templates/monitoring_config.yml.j2
+            dest: /etc/rfid/monitoring.yml
+            owner: rfid
+            group: rfid
+            mode: '0644'
+          vars:
+            metrics:
+              - read_rate_actual
+              - signal_strength
+              - response_time
+              - error_rate
+              - uptime
+            health_checks:
+              interval: "{{ health_check_interval }}"
+              checks:
+                - tcp_connectivity
+                - llrp_protocol_status
+                - memory_usage
+                - cpu_usage
+      when: monitoring_enabled
+      
+    - name: Configure SSL/TLS
+      block:
+        - name: Install SSL certificates
+          ansible.builtin.copy:
+            src: "files/certs/{{ inventory_hostname }}.crt"
+            dest: /etc/rfid/ssl/reader.crt
+            owner: rfid
+            group: rfid
+            mode: '0644'
+            
+        - name: Install SSL private key
+          ansible.builtin.copy:
+            src: "files/certs/{{ inventory_hostname }}.key"
+            dest: /etc/rfid/ssl/reader.key
+            owner: rfid
+            group: rfid
+            mode: '0600'
+      when: ssl_enabled
+      notify: restart_reader_service
+
+    - name: Configure maintenance window
+      ansible.builtin.cron:
+        name: "RFID Reader Maintenance"
+        user: rfid
+        job: "/usr/local/bin/reader-maintenance.sh"
+        cron_file: rfid-maintenance
+        minute: "{{ maintenance_window.split(' ')[0] }}"
+        hour: "{{ maintenance_window.split(' ')[1] }}"
+        day: "{{ maintenance_window.split(' ')[2] }}"
+        month: "{{ maintenance_window.split(' ')[3] }}"
+        weekday: "{{ maintenance_window.split(' ')[4] }}"
+
+  handlers:
+    - name: restart_reader_service
+      ansible.builtin.service:
+        name: rfid-reader
+        state: restarted
+      register: service_restart
+      
+    - name: backup_configuration
+      ansible.builtin.shell:
+        cmd: backup-reader-config.sh {{ inventory_hostname }}
+      when: backup_enabled
+      
+    - name: notify_monitoring
+      ansible.builtin.uri:
+        url: http://monitoring-service/api/v1/alerts
+        method: POST
+        body_format: json
+        body:
+          alert_type: configuration_change
+          host: "{{ inventory_hostname }}"
+          timestamp: "{{ ansible_date_time.iso8601 }}"
+          details: "{{ service_restart }}"
+      ignore_errors: true
+
+  post_tasks:
+    - name: Verify reader configuration
+      ansible.builtin.shell:
+        cmd: verify-reader-config.sh
+      register: verification
+      failed_when: verification.rc != 0
+      
+    - name: Performance validation
+      ansible.builtin.uri:
+        url: "http://{{ inventory_hostname }}:8080/api/v1/performance"
+        method: GET
+        return_content: yes
+      register: performance
+      failed_when: performance.json.response_time > performance_threshold_ms
