@@ -1,0 +1,43 @@
+# Version: 1.0
+# Last Updated: 2023
+# Environment: Production
+
+# Main site configuration
+Host: https://rfid-asset-tracking.company.com
+
+# Global crawler settings
+User-agent: *
+
+# Protected Routes - Internal System Components
+Disallow: /api/
+Disallow: /auth/
+Disallow: /assets/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /reports/
+Disallow: /monitoring/
+Disallow: /admin/
+Disallow: /users/
+Disallow: /locations/
+Disallow: /reader-config/
+Disallow: /system/
+
+# Public Routes - Allowed Access
+Allow: /
+Allow: /login
+Allow: /public/
+Allow: /about
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+
+# Crawler Rate Limiting
+Crawl-delay: 10
+
+# Sitemap Location
+Sitemap: /public/sitemap.xml
+
+# Security Notice
+# This robots.txt implements strict access controls for the RFID Asset Tracking System.
+# Unauthorized access attempts are monitored and may be blocked.
+# For inquiries, contact: security@company.com
