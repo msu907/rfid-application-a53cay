@@ -1,0 +1,209 @@
+// =============================================================================
+// Light Theme - RFID Asset Tracking System
+// Version: 1.0.0
+// Description: Light theme implementation following Material Design standards
+// and WCAG 2.1 Level AA compliance
+// =============================================================================
+
+@use '../base/variables' as *;
+
+// =============================================================================
+// Color System
+// Material Design color palette with semantic naming and accessibility checks
+// =============================================================================
+
+// Function to calculate relative luminance
+@function get-relative-luminance($color) {
+  $red: red($color) / 255;
+  $green: green($color) / 255;
+  $blue: blue($color) / 255;
+  
+  $red: if($red <= 0.03928, $red / 12.92, pow(($red + 0.055) / 1.055, 2.4));
+  $green: if($green <= 0.03928, $green / 12.92, pow(($green + 0.055) / 1.055, 2.4));
+  $blue: if($blue <= 0.03928, $blue / 12.92, pow(($blue + 0.055) / 1.055, 2.4));
+  
+  @return 0.2126 * $red + 0.7152 * $green + 0.0722 * $blue;
+}
+
+// Function to calculate contrast ratio
+@function get-contrast-ratio($color1, $color2) {
+  $luminance1: get-relative-luminance($color1);
+  $luminance2: get-relative-luminance($color2);
+  
+  $lighter: max($luminance1, $luminance2);
+  $darker: min($luminance1, $luminance2);
+  
+  @return ($lighter + 0.05) / ($darker + 0.05);
+}
+
+// Function to create elevation shadow
+@function create-elevation($level) {
+  @if $level == 0 {
+    @return none;
+  }
+  
+  $umbra-color: rgba(0, 0, 0, 0.2);
+  $penumbra-color: rgba(0, 0, 0, 0.14);
+  $ambient-color: rgba(0, 0, 0, 0.12);
+  
+  @return $elevation-map[$level];
+}
+
+// Light theme color palette
+$colors: (
+  primary: (
+    main: #1976d2,
+    light: #42a5f5,
+    dark: #1565c0,
+    contrast: #ffffff
+  ),
+  secondary: (
+    main: #9c27b0,
+    light: #ba68c8,
+    dark: #7b1fa2,
+    contrast: #ffffff
+  ),
+  status: (
+    success: (
+      main: #2e7d32,
+      light: #4caf50,
+      dark: #1b5e20,
+      contrast: #ffffff
+    ),
+    error: (
+      main: #d32f2f,
+      light: #ef5350,
+      dark: #c62828,
+      contrast: #ffffff
+    ),
+    warning: (
+      main: #ed6c02,
+      light: #ff9800,
+      dark: #e65100,
+      contrast: #000000
+    ),
+    info: (
+      main: #0288d1,
+      light: #03a9f4,
+      dark: #01579b,
+      contrast: #ffffff
+    )
+  ),
+  surface: (
+    background: #ffffff,
+    paper: #f5f5f5,
+    elevated: #fafafa
+  ),
+  text: (
+    primary: rgba(0, 0, 0, 0.87),
+    secondary: rgba(0, 0, 0, 0.6),
+    disabled: rgba(0, 0, 0, 0.38),
+    hint: rgba(0, 0, 0, 0.38)
+  ),
+  action: (
+    active: rgba(0, 0, 0, 0.54),
+    hover: rgba(0, 0, 0, 0.04),
+    selected: rgba(0, 0, 0, 0.08),
+    disabled: rgba(0, 0, 0, 0.26),
+    focus: rgba(0, 0, 0, 0.12)
+  )
+);
+
+// Elevation system
+$elevation-map: (
+  0: none,
+  1: (0 2px 1px -1px rgba(0,0,0,0.2),
+      0 1px 1px 0 rgba(0,0,0,0.14),
+      0 1px 3px 0 rgba(0,0,0,0.12)),
+  2: (0 3px 1px -2px rgba(0,0,0,0.2),
+      0 2px 2px 0 rgba(0,0,0,0.14),
+      0 1px 5px 0 rgba(0,0,0,0.12)),
+  4: (0 2px 4px -1px rgba(0,0,0,0.2),
+      0 4px 5px 0 rgba(0,0,0,0.14),
+      0 1px 10px 0 rgba(0,0,0,0.12)),
+  8: (0 5px 5px -3px rgba(0,0,0,0.2),
+      0 8px 10px 1px rgba(0,0,0,0.14),
+      0 3px 14px 2px rgba(0,0,0,0.12)),
+  16: (0 8px 10px -5px rgba(0,0,0,0.2),
+       0 16px 24px 2px rgba(0,0,0,0.14),
+       0 6px 30px 5px rgba(0,0,0,0.12))
+);
+
+// =============================================================================
+// Theme Classes
+// Component-specific styles with accessibility enhancements
+// =============================================================================
+
+.theme-light {
+  background-color: map-get(map-get($colors, surface), background);
+  color: map-get(map-get($colors, text), primary);
+  transition: background-color 300ms map-get(map-get($animation, easing), standard);
+  
+  // Enhanced focus visibility for accessibility
+  *:focus-visible {
+    outline: 2px solid map-get(map-get($colors, primary), main);
+    outline-offset: 2px;
+  }
+}
+
+.surface {
+  background-color: map-get(map-get($colors, surface), paper);
+  border-radius: map-get($border-radius, medium);
+  transition: box-shadow 200ms map-get(map-get($animation, easing), standard);
+  
+  &--elevated {
+    background-color: map-get(map-get($colors, surface), elevated);
+    box-shadow: create-elevation(2);
+  }
+  
+  &--interactive {
+    cursor: pointer;
+    
+    &:hover {
+      box-shadow: create-elevation(4);
+    }
+    
+    &:active {
+      box-shadow: create-elevation(8);
+    }
+  }
+}
+
+.status-indicator {
+  display: inline-block;
+  width: spacing(base);
+  height: spacing(base);
+  border-radius: map-get($border-radius, round);
+  
+  @each $status, $colors in map-get($colors, status) {
+    &--#{$status} {
+      background-color: map-get($colors, main);
+      
+      &::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        opacity: 0;
+        background-color: inherit;
+        transition: opacity 200ms map-get(map-get($animation, easing), standard);
+      }
+      
+      &:hover::before {
+        opacity: 0.08;
+      }
+    }
+  }
+}
+
+// Export theme configuration
+:export {
+  colors: $colors;
+  elevation: $elevation-map;
+  theme-classes: (
+    root: theme-light,
+    surface: surface,
+    status: status-indicator
+  );
+}
