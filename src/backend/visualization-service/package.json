@@ -94,7 +94,7 @@
     "lerna": "^6.6.0",
     "lint-staged": "^13.2.1",
     "performance-now": "^2.1.0",
-    "prettier": "^2.8.7",
+    "prettier": "^3.4.2",
     "rimraf": "^5.0.0",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.0",
